@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Coffee Brewing Lab</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN for Radar Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- PapaParse CDN for CSV Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f8f8; /* Lighter white background */
+            color: #333333; /* Darker text for contrast */
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem; /* Equivalent to p-6 */
+            overflow-y: auto; /* Allow overall body vertical scrolling */
+            overflow-x: auto; /* Allow overall body horizontal scrolling */
+            font-size: 0.875rem; /* Set base font size for all words */
+            font-weight: 400; /* Default to non-bold */
+        }
+        /* Main application container, optimized for desktop screens */
+        .app-container {
+            @apply mx-auto; /* Center the container horizontally */
+            max-width: 1440px; /* Target max width for desktop optimization */
+            width: 100%; /* Take full width up to max-width */
+            background-color: #ffffff; /* White background */
+            padding: 2rem; /* Equivalent to p-8 */
+            border-radius: 0.75rem; /* Equivalent to rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Equivalent to shadow-lg */
+            border: 1px solid #e0e0e0; /* Equivalent to border border-gray-200 */
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; /* Allows it to grow and fill body height */
+            min-height: calc(100vh - 3rem); /* Ensure it's at least viewport height for smaller content */
+            overflow-y: auto; /* Allow vertical scrolling for the entire app container */
+            overflow-x: auto; /* Allow horizontal scrolling for the entire app container */
+        }
+
+        /* Styles for session headers and content */
+        .session-header {
+            background-color: #ffffff; /* White header */
+            color: #333333; /* Dark text */
+            border-bottom: 1px solid #e0e0e0; /* Light gray border */
+            padding: 1rem;
+            font-size: 0.875rem; /* Changed to 0.875rem */
+            font-weight: bold; /* Made bold */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0; /* Prevent header from shrinking */
+            cursor: pointer; /* Indicate it's clickable */
+        }
+        .session-header .toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: inherit; /* Make the icon size inherit from the header */
+            line-height: 1; /* Ensure proper vertical alignment */
+        }
+        .session-header.expanded .toggle-icon {
+            transform: rotate(90deg); /* Rotate + to - */
+        }
+
+        .session-content {
+            background-color: #ffffff; /* White content background */
+            max-height: 0; /* Initial collapsed state */
+            padding: 0 1rem; /* Initial padding for collapsed state */
+            opacity: 0; /* Hidden initially */
+            visibility: hidden; /* Hidden from screen readers and interaction */
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out, opacity 0.3s ease-out, visibility 0.3s ease-out; /* Smooth transition for all properties */
+            display: flex; /* Keep flex for internal layout */
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        .session-content.expanded {
+            max-height: 400px; /* Adjusted to a shorter length */
+            padding: 1rem; /* Restore padding when expanded */
+            opacity: 1; /* Fully visible */
+            visibility: visible; /* Visible to screen readers and interaction */
+            transition: max-height 0.3s ease-in, padding 0.3s ease-in, opacity 0.3s ease-in, visibility 0.3s ease-in;
+            overflow-y: auto; /* Allow internal scrolling when expanded */
+        }
+
+        /* Custom styles for buttons and inputs */
+        .btn-primary {
+            @apply bg-black hover:bg-gray-800 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out;
+            font-size: 0.875rem; /* Ensure button text is 0.875rem */
+            font-weight: bold; /* Keep button text bold */
+        }
+        .btn-secondary {
+            @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out;
+            font-size: 0.875rem; /* Ensure button text is 0.875rem */
+            font-weight: bold; /* Keep button text bold */
+        }
+        /* Base input field styling */
+        .input-field, .select-field {
+            @apply px-3 py-2 border border-gray-400 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black;
+            background-color: white; /* Explicitly set background */
+            color: #333333; /* Explicitly set text color */
+            font-size: 0.875rem; /* Changed to 0.875rem */
+            font-weight: normal; /* Non-bold */
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0 8px; /* Add space between rows */
+            width: 100%; /* Ensure table takes full width of its container */
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0; /* Lighter border for table rows */
+            white-space: nowrap; /* Prevent text wrapping in table cells */
+            font-size: 0.875rem; /* Changed to 0.875rem */
+        }
+        th {
+            background-color: #f0f0f0; /* Light gray header */
+            font-weight: bold; /* Made bold */
+            color: #333333; /* Dark text */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: sticky; /* Sticky header for scrolling table */
+            top: 0;
+            background-color: #f0f0f0;
+            z-index: 10;
+        }
+        td {
+            font-weight: normal; /* Non-bold */
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr.selected-row {
+            background-color: #e6e6e6; /* Slightly darker gray for selected rows */
+        }
+        .chart-container {
+            position: relative;
+            height: 250px; /* Fixed height for chart to fit landscape */
+            width: 100%;
+            max-width: 600px; /* Max width to keep chart from stretching too much */
+            margin: 0 auto;
+            flex-shrink: 0; /* Prevent chart from shrinking */
+        }
+        .message-box {
+            /* No longer fixed, flows with content */
+            @apply p-4 rounded-lg shadow-lg text-white z-50;
+            margin-bottom: 0.5rem; /* Add some margin if needed */
+            background-color: #333; /* Default background, will be overridden by success/error */
+            text-align: center;
+            font-size: 0.875rem; /* Ensure message box text is 0.875rem */
+            font-weight: normal; /* Non-bold */
+        }
+        /* Common style for the main action button ("Save and submit") */
+        #saveSubmitBtn {
+            border: 2px solid #333333; /* Solid grind line effect */
+            background-color: #ffffff;
+            color: #333333;
+            font-size: 0.875rem; /* Changed to 0.875rem */
+            font-weight: bold; /* Made bold */
+            display: block; /* Make it a block element */
+            margin-left: auto; /* Auto margin left */
+            margin-right: auto; /* Auto margin right */
+            @apply hover:bg-gray-100 py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out w-64; /* Apply other button styles and fixed width */
+            flex-shrink: 0; /* Prevent button from shrinking */
+        }
+        /* Style for the mandatory fields error message */
+        #mandatoryFieldsMessage {
+            color: #ef4444; /* Tailwind red-500 */
+            text-align: center;
+            margin-top: 0.5rem;
+            font-weight: normal; /* Non-bold */
+            font-size: 0.875rem; /* Ensure message text is 0.875rem */
+            flex-shrink: 0; /* Prevent message from shrinking */
+        }
+
+        /* Main layout container for left and right columns */
+        .dashboard-content-grid {
+            display: grid;
+            /* Adjusted grid columns for desktop optimization:
+               Left column: fixed 200px (half of 400px)
+               Right column: flexible 5 units (wider) */
+            grid-template-columns: 200px 5fr; /* Changed left column to 200px */
+            gap: 1.5rem; /* Space between columns */
+            flex-grow: 1; /* Allows grid to take up remaining height */
+            overflow-x: auto; /* Allow horizontal scrolling for the grid itself */
+            overflow-y: hidden; /* Vertical scrolling handled by children */
+            padding-top: 1.5rem; /* Add some padding from the title */
+        }
+
+        /* Left Column for Input Panels */
+        .left-column-panels {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Space between input panels */
+            overflow-y: auto; /* Allow vertical scrolling within the left column */
+            flex-shrink: 0; /* Prevent shrinking */
+            padding-right: 0.5rem; /* Small padding to prevent scrollbar from touching content */
+        }
+        .left-column-panels > div { /* Target individual session divs */
+            flex-shrink: 0; /* Prevent individual session boxes from shrinking */
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0; /* Add border as per image */
+            border-radius: 0.5rem; /* Rounded corners */
+            background-color: #ffffff; /* White background */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Subtle shadow */
+        }
+        .left-column-panels .session-content {
+            flex-grow: 1;
+            overflow-y: auto; /* Allow internal scrolling for content within each session box */
+        }
+        .left-column-panels .grid {
+            gap: 0.75rem;
+        }
+
+        /* Right Column for Results and Records */
+        .right-column-panels {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Space between result and record panels */
+            overflow-y: auto; /* Allow vertical scrolling within the right column */
+            overflow-x: auto; /* Allow horizontal scrolling for the right panel itself */
+            flex-shrink: 0; /* Prevent shrinking */
+            padding-left: 0.5rem; /* Small padding to prevent scrollbar from touching content */
+        }
+        .right-column-panels > div { /* Target Your Result and My Lab Record panels */
+            flex-shrink: 0; /* Prevent individual panels from shrinking */
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0; /* Add border as per image */
+            border-radius: 0.5rem; /* Rounded corners */
+            background-color: #ffffff; /* White background */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Subtle shadow */
+            flex-grow: 1; /* Allow these panels to grow vertically */
+        }
+
+        /* Specific adjustments for Your Result and My Lab Record within right column */
+        .your-result-panel {
+            /* Fixed height for this panel */
+            height: 450px;
+            flex-shrink: 0; /* Ensure it doesn't shrink */
+            overflow-y: auto; /* Allow internal scrolling if content overflows fixed height */
+        }
+        .my-lab-record-panel {
+            flex-grow: 1; /* Allow My Lab Record to take more flexible height */
+            min-height: 250px; /* Ensure minimum height for table */
+        }
+        .my-lab-record-panel .table-container {
+            flex-grow: 1;
+            overflow-x: auto; /* Ensure table itself scrolls horizontally */
+            padding: 1rem; /* Padding inside the panel */
+        }
+        .right-column-panels h2 {
+            padding: 1rem; /* Consistent padding for headers */
+            border-bottom: 1px solid #e0e0e0;
+            flex-shrink: 0;
+            font-size: 0.875rem; /* Changed to 0.875rem */
+            font-weight: bold; /* Made bold */
+        }
+        .right-column-panels .chart-container {
+            flex-grow: 1; /* Allow chart container to take available space */
+            padding: 1rem;
+        }
+        .right-column-panels #mandatoryFieldsMessage {
+            padding-bottom: 1rem;
+        }
+        /* Style for the color swatch in the table */
+        .color-swatch {
+            display: inline-block;
+            width: 18px; /* Small square size */
+            height: 18px; /* Small square size */
+            border-radius: 4px; /* Slightly rounded corners */
+            vertical-align: middle; /* Align with text */
+            margin-right: 8px; /* Space between swatch and text */
+            border: 1px solid rgba(0,0,0,0.2); /* Subtle border for visibility */
+        }
+
+        /* Specific styling for the Extraction Yield label and button */
+        .extraction-label-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* Pushes button to the right */
+        }
+        .manual-edit-btn {
+            @apply px-3 py-1 text-xs bg-white text-gray-700 shadow-sm transition duration-150 ease-in-out;
+            border: 1px solid #333333; /* Dark border as in the image */
+            border-radius: 0.375rem; /* rounded-md */
+            height: 32px; /* Consistent height to match label's line-height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-left: 0.5rem; /* Small margin to separate from label text */
+            font-size: 0.875rem; /* Ensure button text is 0.875rem */
+            font-weight: normal; /* Non-bold */
+        }
+
+        /* Styles for Turbulence section's dynamic rows */
+        .turbulence-action-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Three columns for Action, Time, Volume */
+            gap: 0.5rem; /* Small gap between fields */
+            align-items: end; /* Align items to the bottom */
+            margin-bottom: 0.75rem; /* Space between rows */
+        }
+        .turbulence-action-row label {
+            grid-column: span 1; /* Label spans one column */
+            font-size: 0.875rem; /* Changed to 0.875rem */
+            font-weight: normal; /* Non-bold */
+            color: #4a5568; /* Tailwind gray-700 */
+        }
+        .turbulence-action-row .input-field,
+        .turbulence-action-row .select-field {
+            width: 100%; /* Ensure inputs take full width of their grid cell */
+        }
+        /* Adjust label for the first row of turbulence actions */
+        .turbulence-action-row:first-child .action-label {
+            grid-column: span 1; /* Ensures label is above the first action input */
+        }
+        .turbulence-action-row:first-child .action-time-label {
+            grid-column: span 1;
+        }
+        .turbulence-action-row:first-child .action-volume-label {
+            grid-column: span 1;
+        }
+        /* For subsequent rows, hide labels to save space and align inputs */
+        .turbulence-action-row:not(:first-child) .action-label,
+        .turbulence-action-row:not(:first-child) .action-time-label,
+        .turbulence-action-row:not(:first-child) .action-volume-label {
+            display: none;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="app-container">
+        <h1 class="text-4xl font-extrabold text-center text-black mb-6 flex-shrink-0">Your Coffee Brewing Lab</h1>
+
+        <div class="dashboard-content-grid">
+            <!-- Left Column: Input Sessions -->
+            <div class="left-column-panels">
+                <!-- New Ratio Calculation Section -->
+                <div class="session-card">
+                    <div class="session-header rounded-t-lg" data-target="ratioContent">
+                        <span>Brewing Ratio</span>
+                        <span class="toggle-icon">+</span> <!-- Changed to plus sign -->
+                    </div>
+                    <div id="ratioContent" class="session-content expanded">
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label for="coffeeBeans" class="block text-sm font-medium text-gray-700">Coffee beans (g)</label>
+                                <input type="number" id="coffeeBeans" class="input-field block w-full rounded-md" placeholder="e.g., 20">
+                            </div>
+                            <div>
+                                <label for="water" class="block text-sm font-medium text-gray-700">Water (g)</label>
+                                <input type="number" id="water" class="input-field block w-full rounded-md" placeholder="e.g., 300">
+                            </div>
+                            <div>
+                                <label for="coffeeWaterRatio" class="block text-sm font-medium text-gray-700">Coffee-to-water ratio</label>
+                                <input type="text" id="coffeeWaterRatio" class="input-field block w-full rounded-md" readonly value="--">
+                            </div>
+                            <div>
+                                <label for="tds" class="block text-sm font-medium text-gray-700">TDS (%)</label>
+                                <input type="number" id="tds" class="input-field block w-full rounded-md" placeholder="e.g., 1.3">
+                            </div>
+                            <div>
+                                <div class="extraction-label-group">
+                                    <label for="extractionYield" class="text-sm font-medium text-gray-700">Extraction Yield (%)</label>
+                                    <button id="toggleExtractionEditBtn" class="manual-edit-btn">Manual Edit</button>
+                                </div>
+                                <input type="text" id="extractionYield" class="input-field block w-full mt-1" readonly value="--">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bean Info Section -->
+                <div class="session-card">
+                    <div class="session-header rounded-t-lg" data-target="beanInfoContent">
+                        <span>Bean Info</span>
+                        <span class="toggle-icon">+</span> <!-- Changed to plus sign -->
+                    </div>
+                    <div id="beanInfoContent" class="session-content">
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label for="origin" class="block text-sm font-medium text-gray-700">Origin <span class="text-red-500">*</span></label>
+                                <select id="origin" class="select-field block w-full rounded-md">
+                                    <option value="">Select Origin</option>
+                                    <option value="Brazil">Brazil</option>
+                                    <option value="Colombia">Colombia</option>
+                                    <option value="Costa Rica">Costa Rica</option>
+                                    <option value="Ethiopia">Ethiopia</option>
+                                    <option value="Guatemala">Guatemala</option>
+                                    <option value="Honduras">Honduras</option>
+                                    <option value="India">India</option>
+                                    <option value="Indonesia">Indonesia</option>
+                                    <option value="Kenya">Kenya</option>
+                                    <option value="Mexico">Mexico</option>
+                                    <option value="Peru">Peru</option>
+                                    <option value="Vietnam">Vietnam</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                            </div>
+                            <div id="otherOriginContainer" class="hidden">
+                                <label for="otherOrigin" class="block text-sm font-medium text-gray-700">Other Origin (Please Specify)</label>
+                                <input type="text" id="otherOrigin" class="input-field block w-full rounded-md" placeholder="e.g., Rwanda">
+                            </div>
+                            <div>
+                                <label for="processingMethod" class="block text-sm font-medium text-gray-700">Processing methods</label>
+                                <select id="processingMethod" class="select-field block w-full rounded-md">
+                                    <option value="">Select Processing Method</option>
+                                    <option value="Washed (Wet) Process">Washed (Wet) Process</option>
+                                    <option value="Natural (Dry) Process">Natural (Dry) Process</option>
+                                    <option value="Pulped Natural (Semi-Dry) Process">Pulped Natural (Semi-Dry) Process</option>
+                                    <option value="Honey Process (Semi-Washed)">Honey Process (Semi-Washed)</option>
+                                    <option value="Wet-Hulled (Giling Basah)">Wet-Hulled (Giling Basah)</option>
+                                    <option value="Anaerobic Fermentation">Anaerobic Fermentation</option>
+                                    <option value="Carbonic Maceration">Carbonic Maceration</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                            </div>
+                            <div id="otherProcessingMethodContainer" class="hidden">
+                                <label for="otherProcessingMethod" class="block text-sm font-medium text-gray-700">Other Processing Method (Please Specify)</label>
+                                <input type="text" id="otherProcessingMethod" class="input-field block w-full rounded-md" placeholder="e.g., Experimental Fermentation">
+                            </div>
+                            <div>
+                                <label for="altitude" class="block text-sm font-medium text-gray-700">Altitude (m)</label>
+                                <input type="number" id="altitude" class="input-field block w-full rounded-md" placeholder="e.g., 1500">
+                            </div>
+                            <div>
+                                <label for="roastingDate" class="block text-sm font-medium text-gray-700">Roasting Date</label>
+                                <input type="date" id="roastingDate" class="input-field block w-full rounded-md">
+                            </div>
+                            <div>
+                                <label for="roastingLevel" class="block text-sm font-medium text-gray-700">Level of Roasting</label>
+                                <select id="roastingLevel" class="select-field block w-full rounded-md">
+                                    <option value="">Select Level</option>
+                                    <option value="Cinnamon Roast: Agtron: ~90–100">Cinnamon Roast: Agtron: ~90–100</option>
+                                    <option value="Light Roast: Agtron Score: ~70–90">Light Roast: Agtron Score: ~70–90</option>
+                                    <option value="Medium Roast: Agtron Score: ~50–70">Medium Roast: Agtron Score: ~50–70</option>
+                                    <option value="Medium-Dark Roast: Agtron Score ~45–55">Medium-Dark Roast: Agtron Score ~45–55</option>
+                                    <option value="Dark Roast: Agtron Score: ~30–50">Dark Roast: Agtron Score: ~30–50</option>
+                                    <option value="Vienna/French/Italian Roast: Agtron <30">Vienna/French/Italian Roast: Agtron <30</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Brewing Section -->
+                <div class="session-card">
+                    <div class="session-header" data-target="brewingContent">
+                        <span>Brewing</span>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div id="brewingContent" class="session-content">
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label for="brewingMethod" class="block text-sm font-medium text-gray-700">Brewing Method</label>
+                                <select id="brewingMethod" class="select-field block w-full rounded-md">
+                                    <option value="">Select Brewing Method</option>
+                                    <option value="Pour-Over">Pour-Over</option>
+                                    <option value="French Press">French Press</option>
+                                    <option value="AeroPress">AeroPress</option>
+                                    <option value="Espresso">Espresso</option>
+                                    <option value="Espresso Ristretto">Espresso Ristretto</option>
+                                    <option value="Espresso Lungo">Espresso Lungo</option>
+                                    <option value="Cold Brew">Cold Brew</option>
+                                    <option value="Clever Dripper">Clever Dripper</option>
+                                    <option value="Moka Pot">Moka Pot</m>
+                                    <option value="Machine Drip">Machine Drip</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                            </div>
+                            <div id="otherBrewingMethodContainer" class="hidden">
+                                <label for="otherBrewingMethod" class="block text-sm font-medium text-gray-700">Other Brewing Method (Please Specify)</label>
+                                <input type="text" id="otherBrewingMethod" class="input-field block w-full rounded-md" placeholder="e.g., Siphon">
+                            </div>
+                            <div>
+                                <label for="waterTemperature" class="block text-sm font-medium text-gray-700">Water Temperature (°C) <span class="text-red-500">*</span></label>
+                                <input type="number" id="waterTemperature" class="input-field block w-full rounded-md" placeholder="e.g., 92">
+                            </div>
+                            <div>
+                                <label for="grinderBrand" class="block text-sm font-medium text-gray-700">Your Grinder Brand</label>
+                                <input type="text" id="grinderBrand" class="input-field block w-full rounded-md" placeholder="e.g., Baratza Encore">
+                            </div>
+                            <div>
+                                <label for="grinderUnit" class="block text-sm font-medium text-gray-700">Your Grinder Unit</label>
+                                <input type="text" id="grinderUnit" class="input-field block w-full rounded-md" placeholder="e.g., 15">
+                            </div>
+                            <div>
+                                <label for="filteringTools" class="block text-sm font-medium text-gray-700">Filtering Tools</label>
+                                <select id="filteringTools" class="select-field block w-full rounded-md">
+                                    <option value="">Select Filtering Tool</option>
+                                    <option value="Paper">Paper</option>
+                                    <option value="Metal">Metal</option>
+                                    <option value="Cloth">Cloth</option>
+                                </select>
+                            </div>
+
+                            <!-- Turbulence Section -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-medium text-gray-700">Turbulence</label>
+                                <div id="turbulenceActionsContainer">
+                                    <!-- Turbulence action rows will be added here by JavaScript -->
+                                </div>
+                                <button type="button" id="addActionButton" class="btn-secondary text-sm px-4 py-1 mt-2 rounded-md">+ Add Action</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sensation Section -->
+                <div class="session-card">
+                    <div class="session-header rounded-b-lg" data-target="sensationContent">
+                        <span>Sensation</span>
+                        <span class="toggle-icon">+</span> <!-- Changed to plus sign -->
+                    </div>
+                    <div id="sensationContent" class="session-content">
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label for="sensationAcidity" class="block text-sm font-medium text-gray-700">Acidity (1-10)</label>
+                                <input type="number" id="sensationAcidity" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                            </div>
+                            <div>
+                                <label for="sensationBody" class="block text-sm font-medium text-gray-700">Body (1-10)</label>
+                                <input type="number" id="sensationBody" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                            </div>
+                            <div>
+                                <label for="sensationSweetness" class="block text-sm font-medium text-gray-700">Sweetness (1-10)</label>
+                                <input type="number" id="sensationSweetness" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                            </div>
+                            <div>
+                                <label for="sensationFlavor" class="block text-sm font-medium text-gray-700">Flavor (1-10)</label>
+                                <input type="number" id="sensationFlavor" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                            </div>
+                            <div>
+                                <label for="sensationAftertaste" class="block text-sm font-medium text-gray-700">Aftertaste (1-10)</label>
+                                <input type="number" id="sensationAftertaste" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                            </div>
+                            <div>
+                                <label for="sensationBalance" class="block text-sm font-medium text-gray-700">Balance (1-10)</label>
+                                <input type="number" id="sensationBalance" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                            </div>
+                            <div>
+                                <label for="sensationOverall" class="block text-sm font-medium text-gray-700">Overall Impression (1-10) <span class="text-red-500">*</span></label>
+                                <input type="number" id="sensationOverall" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Merged "Save and submit" Button -->
+                <button id="saveSubmitBtn" class="btn-primary w-full mt-4">Save and submit</button>
+            </div>
+
+            <!-- Right Column: Chart and Table Panels -->
+            <div class="right-column-panels">
+                <!-- Your Result Panel -->
+                <div class="your-result-panel">
+                    <h2 class="text-2xl font-bold text-black text-center flex-shrink-0">Your Result</h2>
+                    <div id="chartMessage" class="message-box text-center mb-2 flex-shrink-0">
+                        Please select exactly two entries from the table below to compare.
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                    <div id="mandatoryFieldsMessage" class="text-red-500 text-center mt-2 hidden"></div>
+                </div>
+
+                <!-- My Lab Record Panel -->
+                <div class="my-lab-record-panel">
+                    <h2 class="text-2xl font-bold text-black text-center flex-shrink-0">My Lab Record</h2>
+                    <div class="table-container">
+                        <table id="dataTable" class="min-w-full bg-white">
+                            <thead>
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Colour</th>
+                                    <th>Coffee Beans (g)</th>
+                                    <th>Water (g)</th>
+                                    <th>Ratio</th>
+                                    <th>TDS (%)</th>
+                                    <th>Extraction Yield (%)</th>
+                                    <th>Origin</th>
+                                    <th>Processing Method</th>
+                                    <th>Altitude (m)</th>
+                                    <th>Roasting Date</th>
+                                    <th>Roasting Level</th>
+                                    <th>Brewing Method</th>
+                                    <th>Water Temperature (°C)</th>
+                                    <th>Your Grinder Brand</th>
+                                    <th>Your Grinder Unit</th>
+                                    <th>Filtering Tools</th>
+                                    <th>Turbulence Actions</th> <!-- New column for turbulence -->
+                                    <th>Acidity</th>
+                                    <th>Body</th>
+                                    <th>Sweetness</th>
+                                    <th>Flavor</th>
+                                    <th>Aftertaste</th>
+                                    <th>Balance</th>
+                                    <th>Overall Imp.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data rows will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button id="exportCsvBtn" class="btn-secondary w-full md:w-auto">Export to CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global array to store all brewing data
+        let brewData = [];
+        // Set to store indices of selected rows for comparison
+        let selectedRows = new Set();
+        // Chart.js instance
+        let radarChart;
+        // Keep track of the current color index for new entries
+        let currentColorIndex = 0;
+
+        // State for manual edit of Extraction Yield
+        let isExtractionYieldManualEdit = false;
+
+        // DOM Elements
+        const saveSubmitBtn = document.getElementById('saveSubmitBtn');
+        const dataTableBody = document.querySelector('#dataTable tbody');
+        const radarChartCanvas = document.getElementById('radarChart');
+        const chartMessage = document.getElementById('chartMessage');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const mandatoryFieldsMessage = document.getElementById('mandatoryFieldsMessage');
+
+        // New Ratio Calculation specific elements
+        const coffeeBeansInput = document.getElementById('coffeeBeans');
+        const waterInput = document.getElementById('water');
+        const coffeeWaterRatioInput = document.getElementById('coffeeWaterRatio');
+        const tdsInput = document.getElementById('tds');
+        const extractionYieldInput = document.getElementById('extractionYield');
+        const toggleExtractionEditBtn = document.getElementById('toggleExtractionEditBtn');
+
+        // Bean Info specific elements
+        const originSelect = document.getElementById('origin');
+        const otherOriginContainer = document.getElementById('otherOriginContainer');
+        const otherOriginInput = document.getElementById('otherOrigin');
+
+        const processingMethodSelect = document.getElementById('processingMethod');
+        const otherProcessingMethodContainer = document.getElementById('otherProcessingMethodContainer');
+        const otherProcessingMethodInput = document.getElementById('otherProcessingMethod');
+
+        // Brewing specific elements
+        const brewingMethodSelect = document.getElementById('brewingMethod');
+        const otherBrewingMethodContainer = document.getElementById('otherBrewingMethodContainer');
+        const otherBrewingMethodInput = document.getElementById('otherBrewingMethod');
+        const waterTemperatureInput = document.getElementById('waterTemperature');
+        const grinderBrandInput = document.getElementById('grinderBrand');
+        const grinderUnitInput = document.getElementById('grinderUnit');
+        const filteringToolsSelect = document.getElementById('filteringTools');
+
+        // Turbulence specific elements
+        const turbulenceActionsContainer = document.getElementById('turbulenceActionsContainer');
+        const addActionButton = document.getElementById('addActionButton');
+
+
+        // Sensation diameter labels for the radar chart
+        const sensationLabels = [
+            'Acidity', 'Body', 'Sweetness', 'Flavor', 'Aftertaste', 'Balance', 'Overall Impression'
+        ];
+
+        // Define a set of distinct colors for chart datasets (RGBA for transparency)
+        const chartColors = [
+            { // Red
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+            },
+            { // Blue
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+            },
+            { // Green
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(75, 192, 192, 1)'
+            },
+            { // Orange
+                backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(255, 159, 64, 1)'
+            },
+            { // Purple
+                backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                pointBackgroundColor: 'rgba(153, 102, 255, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(153, 102, 255, 1)'
+            },
+            { // Yellow
+                backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                borderColor: 'rgba(255, 206, 86, 1)',
+                pointBackgroundColor: 'rgba(255, 206, 86, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(255, 206, 86, 1)'
+            },
+            { // Teal
+                backgroundColor: 'rgba(0, 128, 128, 0.5)',
+                borderColor: 'rgba(0, 128, 128, 1)',
+                pointBackgroundColor: 'rgba(0, 128, 128, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(0, 128, 128, 1)'
+            }
+        ];
+
+        // Helper function to get the next color from the palette
+        function getNextColor() {
+            const color = chartColors[currentColorIndex % chartColors.length];
+            currentColorIndex++;
+            return color;
+        }
+
+        // Get all sensation input fields
+        const sensationInputs = [
+            document.getElementById('sensationAcidity'),
+            document.getElementById('sensationBody'),
+            document.getElementById('sensationSweetness'),
+            document.getElementById('sensationFlavor'),
+            document.getElementById('sensationAftertaste'),
+            document.getElementById('sensationBalance'),
+            document.getElementById('sensationOverall')
+        ];
+
+        // Add event listeners to sensation input fields for live chart update
+        sensationInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                if (selectedRows.size === 0) {
+                    updateRadarChart();
+                }
+                mandatoryFieldsMessage.classList.add('hidden');
+            });
+        });
+
+        // Add event listeners to other mandatory input fields to clear message
+        document.getElementById('origin').addEventListener('input', () => {
+            mandatoryFieldsMessage.classList.add('hidden');
+        });
+        document.getElementById('waterTemperature').addEventListener('input', () => {
+            mandatoryFieldsMessage.classList.add('hidden');
+        });
+        document.getElementById('brewingMethod').addEventListener('input', () => {
+            mandatoryFieldsMessage.classList.add('hidden');
+        });
+
+        // Event listener for Origin select to show/hide Other Origin input
+        originSelect.addEventListener('change', () => {
+            if (originSelect.value === 'Others') {
+                otherOriginContainer.classList.remove('hidden');
+            } else {
+                otherOriginContainer.classList.add('hidden');
+                otherOriginInput.value = ''; // Clear the input when hidden
+            }
+            mandatoryFieldsMessage.classList.add('hidden'); // Clear error message on origin change
+        });
+
+        // Event listener for Processing Method select to show/hide Other Processing Method input
+        processingMethodSelect.addEventListener('change', () => {
+            if (processingMethodSelect.value === 'Others') {
+                otherProcessingMethodContainer.classList.remove('hidden');
+            } else {
+                otherProcessingMethodContainer.classList.add('hidden');
+                otherProcessingMethodInput.value = ''; // Clear the input when hidden
+            }
+            mandatoryFieldsMessage.classList.add('hidden'); // Clear error message on processing method change
+        });
+
+        // Event listener for Brewing Method select to show/hide Other Brewing Method input
+        brewingMethodSelect.addEventListener('change', () => {
+            if (brewingMethodSelect.value === 'Others') {
+                otherBrewingMethodContainer.classList.remove('hidden');
+            } else {
+                otherBrewingMethodContainer.classList.add('hidden');
+                otherBrewingMethodInput.value = ''; // Clear the input when hidden
+            }
+            mandatoryFieldsMessage.classList.add('hidden'); // Clear error message on brewing method change
+        });
+
+        // Function to calculate and display coffee-to-water ratio and extraction yield
+        function calculateBrewingMetrics() {
+            const coffeeBeans = parseFloat(coffeeBeansInput.value);
+            const water = parseFloat(waterInput.value);
+            const tds = parseFloat(tdsInput.value);
+
+            // Calculate Coffee-to-water ratio
+            if (isNaN(coffeeBeans) || isNaN(water) || coffeeBeans <= 0) {
+                coffeeWaterRatioInput.value = '--';
+            } else {
+                const ratio = water / coffeeBeans;
+                coffeeWaterRatioInput.value = `1:${ratio.toFixed(2)}`;
+            }
+
+            // Calculate Extraction Yield ONLY if not in manual edit mode
+            if (!isExtractionYieldManualEdit) {
+                if (isNaN(tds) || isNaN(water) || isNaN(coffeeBeans) || coffeeBeans <= 0) {
+                    extractionYieldInput.value = '--';
+                } else {
+                    const extractionYield = (tds * water) / coffeeBeans;
+                    extractionYieldInput.value = `${extractionYield.toFixed(2)}`;
+                }
+            }
+        }
+
+        // Add event listeners for brewing metrics calculation
+        coffeeBeansInput.addEventListener('input', calculateBrewingMetrics);
+        waterInput.addEventListener('input', calculateBrewingMetrics);
+        tdsInput.addEventListener('input', calculateBrewingMetrics);
+
+        // Event listener for manual edit toggle button
+        toggleExtractionEditBtn.addEventListener('click', () => {
+            isExtractionYieldManualEdit = !isExtractionYieldManualEdit; // Toggle the state
+
+            if (isExtractionYieldManualEdit) {
+                // Switch to manual edit mode
+                extractionYieldInput.readOnly = false;
+                toggleExtractionEditBtn.textContent = 'Auto Calculate';
+                extractionYieldInput.focus(); // Focus for immediate input
+            } else {
+                // Switch to auto calculate mode
+                extractionYieldInput.readOnly = true;
+                toggleExtractionEditBtn.textContent = 'Manual Edit';
+                calculateBrewingMetrics(); // Recalculate and display the auto value
+            }
+        });
+
+        // Function to add a new turbulence action row
+        function addTurbulenceActionRow(action = '', actionTime = '', volume = '') {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'turbulence-action-row';
+
+            // Action dropdown
+            const actionDiv = document.createElement('div');
+            actionDiv.innerHTML = `
+                <label class="block text-sm font-medium text-gray-700 action-label">Action</label>
+                <select class="select-field block w-full rounded-md turbulence-action-select">
+                    <option value="">Select Action</option>
+                    <option value="Gentle Stirring">Gentle Stirring</option>
+                    <option value="Circular Pour">Circular Pour</option>
+                    <option value="Controlled Agitation">Controlled Agitation</option>
+                    <option value="Minimal Agitation">Minimal Agitation</option>
+                </select>
+            `;
+            actionDiv.querySelector('select').value = action; // Set initial value
+            rowDiv.appendChild(actionDiv);
+
+            // Action Time input
+            const actionTimeDiv = document.createElement('div');
+            actionTimeDiv.innerHTML = `
+                <label class="block text-sm font-medium text-gray-700 action-time-label">Action Time</label>
+                <input type="text" class="input-field block w-full rounded-md turbulence-action-time" placeholder="e.g., hh:mm:ss" value="${actionTime}">
+            `;
+            rowDiv.appendChild(actionTimeDiv);
+
+            // Volume input
+            const volumeDiv = document.createElement('div');
+            volumeDiv.innerHTML = `
+                <label class="block text-sm font-medium text-gray-700 action-volume-label">Volume</label>
+                <input type="text" class="input-field block w-full rounded-md turbulence-action-volume" placeholder="e.g., 30g" value="${volume}">
+            `;
+            rowDiv.appendChild(volumeDiv);
+
+            turbulenceActionsContainer.appendChild(rowDiv);
+            updateTurbulenceLabelsVisibility(); // Update label visibility after adding a new row
+        }
+
+        // Function to update visibility of turbulence labels
+        function updateTurbulenceLabelsVisibility() {
+            const rows = turbulenceActionsContainer.querySelectorAll('.turbulence-action-row');
+            rows.forEach((row, index) => {
+                const actionLabel = row.querySelector('.action-label');
+                const actionTimeLabel = row.querySelector('.action-time-label');
+                const actionVolumeLabel = row.querySelector('.action-volume-label');
+
+                if (actionLabel) actionLabel.style.display = index === 0 ? 'block' : 'none';
+                if (actionTimeLabel) actionTimeLabel.style.display = index === 0 ? 'block' : 'none';
+                if (actionVolumeLabel) actionVolumeLabel.style.display = index === 0 ? 'block' : 'none';
+            });
+        }
+
+        // Event listener for "+ Add Action" button
+        addActionButton.addEventListener('click', () => {
+            addTurbulenceActionRow();
+        });
+
+
+        // Initialize Chart.js Radar Chart
+        function initializeRadarChart() {
+            const ctx = radarChartCanvas.getContext('2d');
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: sensationLabels,
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    elements: {
+                        line: {
+                            borderWidth: 3
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true,
+                                color: '#e0e0e0'
+                            },
+                            suggestedMin: 1,
+                            suggestedMax: 10,
+                            ticks: {
+                                display: true,
+                                stepSize: 1,
+                                color: '#888888',
+                                backdropColor: 'rgba(255, 255, 255, 0.7)',
+                                font: {
+                                    size: 0.875 * 16, /* Adjusted to 0.875rem (14px) */
+                                    weight: '600'
+                                }
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 0.875 * 16, /* Adjusted to 0.875rem (14px) */
+                                    weight: 'bold'
+                                },
+                                color: '#333333'
+                            },
+                            grid: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 0.875 * 16, /* Adjusted to 0.875rem (14px) */
+                                    weight: '600'
+                                },
+                                color: '#333333'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.raw;
+                                    return `${label}: ${value}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to update the data table
+        function updateDataTable() {
+            dataTableBody.innerHTML = '';
+            brewData.forEach((entry, index) => {
+                const row = dataTableBody.insertRow();
+                row.dataset.index = index;
+
+                if (selectedRows.has(index)) {
+                    row.classList.add('selected-row');
+                }
+
+                const checkboxCell = row.insertCell();
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'form-checkbox h-5 w-5 text-black rounded-md border-gray-300 focus:ring-black';
+                checkbox.checked = selectedRows.has(index);
+                checkbox.dataset.index = index;
+                checkbox.addEventListener('change', handleCheckboxChange);
+                checkboxCell.appendChild(checkbox);
+
+                // Create color swatch element
+                const colorCell = row.insertCell();
+                const colorSwatch = document.createElement('div');
+                colorSwatch.className = 'color-swatch';
+                colorSwatch.style.backgroundColor = entry.color.borderColor; // Use borderColor for solid swatch color
+                colorCell.appendChild(colorSwatch);
+
+                row.insertCell().textContent = entry.coffeeBeans;
+                row.insertCell().textContent = entry.water;
+                row.insertCell().textContent = entry.coffeeWaterRatio;
+                row.insertCell().textContent = entry.tds;
+                row.insertCell().textContent = entry.extractionYield;
+                row.insertCell().textContent = entry.origin;
+                row.insertCell().textContent = entry.processingMethod;
+                row.insertCell().textContent = entry.altitude;
+                row.insertCell().textContent = entry.roastingDate;
+                row.insertCell().textContent = entry.roastingLevel;
+                row.insertCell().textContent = entry.brewingMethod;
+                row.insertCell().textContent = entry.waterTemperature;
+                row.insertCell().textContent = entry.grinderBrand;
+                row.insertCell().textContent = entry.grinderUnit;
+                row.insertCell().textContent = entry.filteringTools;
+
+                // Display Turbulence Actions
+                const turbulenceActionsCell = row.insertCell();
+                if (entry.turbulenceActions && entry.turbulenceActions.length > 0) {
+                    turbulenceActionsCell.textContent = entry.turbulenceActions.map(action =>
+                        `${action.action || 'N/A'} @ ${action.actionTime || 'N/A'} for ${action.volume || 'N/A'}`
+                    ).join('; ');
+                } else {
+                    turbulenceActionsCell.textContent = 'N/A';
+                }
+
+                row.insertCell().textContent = entry.sensation.acidity;
+                row.insertCell().textContent = entry.sensation.body;
+                row.insertCell().textContent = entry.sensation.sweetness;
+                row.insertCell().textContent = entry.sensation.flavor;
+                row.insertCell().textContent = entry.sensation.aftertaste;
+                row.insertCell().textContent = entry.sensation.balance;
+                row.insertCell().textContent = entry.sensation.overall;
+            });
+        }
+
+        // Handle checkbox change for pair comparison
+        function handleCheckboxChange(event) {
+            const index = parseInt(event.target.dataset.index);
+            const rowElement = event.target.closest('tr');
+
+            if (event.target.checked) {
+                if (selectedRows.size < 2) {
+                    selectedRows.add(index);
+                    rowElement.classList.add('selected-row');
+                } else {
+                    const oldestIndex = selectedRows.values().next().value;
+                    selectedRows.delete(oldestIndex);
+                    selectedRows.add(index);
+
+                    const oldestCheckbox = dataTableBody.querySelector(`input[type="checkbox"][data-index="${oldestIndex}"]`);
+                    if (oldestCheckbox) {
+                        oldestCheckbox.checked = false;
+                        oldestCheckbox.closest('tr').classList.remove('selected-row');
+                    }
+                    rowElement.classList.add('selected-row');
+                }
+            } else {
+                selectedRows.delete(index);
+                rowElement.classList.remove('selected-row');
+            }
+            updateRadarChart();
+        }
+
+        // Function to update the radar chart based on selected rows or live input
+        function updateRadarChart() {
+            radarChart.data.datasets = [];
+            chartMessage.classList.add('hidden');
+
+            if (selectedRows.size === 0) {
+                // Live preview from Sensation inputs
+                // Use || 5 to default to 5 if input is blank or invalid
+                const currentSensationData = [
+                    parseInt(document.getElementById('sensationAcidity').value) || 5,
+                    parseInt(document.getElementById('sensationBody').value) || 5,
+                    parseInt(document.getElementById('sensationSweetness').value) || 5,
+                    parseInt(document.getElementById('sensationFlavor').value) || 5,
+                    parseInt(document.getElementById('sensationAftertaste').value) || 5,
+                    parseInt(document.getElementById('sensationBalance').value) || 5,
+                    parseInt(document.getElementById('sensationOverall').value) || 5
+                ];
+
+                const colorSet = chartColors[currentColorIndex % chartColors.length]; // Use next available color for live preview
+                radarChart.data.datasets.push({
+                    label: 'Your Scores',
+                    data: currentSensationData,
+                    backgroundColor: colorSet.backgroundColor,
+                    borderColor: colorSet.borderColor,
+                    pointBackgroundColor: colorSet.pointBackgroundColor,
+                    pointBorderColor: colorSet.pointBorderColor,
+                    pointHoverBackgroundColor: colorSet.pointHoverBackgroundColor,
+                    pointHoverBorderColor: colorSet.pointHoverBorderColor
+                });
+                radarChart.update();
+
+            } else if (selectedRows.size === 1) {
+                const index = Array.from(selectedRows)[0];
+                const entry = brewData[index];
+
+                const colorSet = entry.color; // Use stored color for selected entry
+                radarChart.data.datasets.push({
+                    label: `Entry ${index + 1}`, // Use generic label for selected entries
+                    data: [
+                        entry.sensation.acidity,
+                        entry.sensation.body,
+                        entry.sensation.sweetness,
+                        entry.sensation.flavor,
+                        entry.sensation.aftertaste,
+                        entry.sensation.balance,
+                        entry.sensation.overall
+                    ],
+                    backgroundColor: colorSet.backgroundColor,
+                    borderColor: colorSet.borderColor,
+                    pointBackgroundColor: colorSet.pointBackgroundColor,
+                    pointBorderColor: colorSet.pointBorderColor,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: colorSet.pointHoverBorderColor
+                });
+                radarChart.update();
+
+            } else if (selectedRows.size === 2) {
+                const indices = Array.from(selectedRows);
+                const entry1 = brewData[indices[0]];
+                const entry2 = brewData[indices[1]];
+
+                const colorSet1 = entry1.color; // Use stored color for first selected entry
+                const colorSet2 = entry2.color; // Use stored color for second selected entry
+
+                radarChart.data.datasets.push({
+                    label: `Entry ${indices[0] + 1}`, // Use generic label for selected entries
+                    data: [
+                        entry1.sensation.acidity,
+                        entry1.sensation.body,
+                        entry1.sensation.sweetness,
+                        entry1.sensation.flavor,
+                        entry1.sensation.aftertaste,
+                        entry1.sensation.balance,
+                        entry1.sensation.overall
+                    ],
+                    backgroundColor: colorSet1.backgroundColor,
+                    borderColor: colorSet1.borderColor,
+                    pointBackgroundColor: colorSet1.pointBackgroundColor,
+                    pointBorderColor: colorSet1.pointBorderColor,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: colorSet1.pointHoverBorderColor
+                });
+
+                radarChart.data.datasets.push({
+                    label: `Entry ${indices[1] + 1}`, // Use generic label for selected entries
+                    data: [
+                        entry2.sensation.acidity,
+                        entry2.sensation.body,
+                        entry2.sensation.sweetness,
+                        entry2.sensation.flavor,
+                        entry2.sensation.aftertaste,
+                        entry2.sensation.balance,
+                        entry2.sensation.overall
+                    ],
+                    backgroundColor: colorSet2.backgroundColor,
+                    borderColor: colorSet2.borderColor,
+                    pointBackgroundColor: colorSet2.pointBackgroundColor,
+                    pointBorderColor: colorSet2.pointBorderColor,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: colorSet2.pointHoverBorderColor
+                });
+
+                radarChart.update();
+            } else {
+                chartMessage.classList.add('hidden');
+            }
+        }
+
+        // Function to handle saving data
+        function saveData() {
+            // Get new fields
+            const coffeeBeans = coffeeBeansInput.value.trim();
+            const water = waterInput.value.trim();
+            const coffeeWaterRatio = coffeeWaterRatioInput.value; // Get the displayed ratio
+            const tds = tdsInput.value.trim();
+            const extractionYield = extractionYieldInput.value; // Get the displayed extraction Yield (manual or auto)
+
+            let origin = document.getElementById('origin').value;
+            let processingMethod = document.getElementById('processingMethod').value;
+            const altitude = document.getElementById('altitude').value;
+            const roastingDate = document.getElementById('roastingDate').value;
+            const roastingLevel = document.getElementById('roastingLevel').value;
+            let brewingMethod = document.getElementById('brewingMethod').value; // New field
+            const waterTemperature = document.getElementById('waterTemperature').value;
+            const grinderBrand = document.getElementById('grinderBrand').value;
+            const grinderUnit = document.getElementById('grinderUnit').value;
+            const filteringTools = document.getElementById('filteringTools').value;
+
+            // Collect turbulence actions
+            const turbulenceActions = [];
+            const actionRows = turbulenceActionsContainer.querySelectorAll('.turbulence-action-row');
+            actionRows.forEach(row => {
+                const action = row.querySelector('.turbulence-action-select').value;
+                const actionTime = row.querySelector('.turbulence-action-time').value;
+                const volume = row.querySelector('.turbulence-action-volume').value;
+                if (action || actionTime || volume) { // Only save if at least one field is filled
+                    turbulenceActions.push({ action, actionTime, volume });
+                }
+            });
+
+            // If "Others" is selected for Origin, use the value from the otherOriginInput
+            if (origin === 'Others') {
+                origin = otherOriginInput.value.trim();
+                if (!origin) { // If "Others" is selected but the text field is empty
+                    mandatoryFieldsMessage.textContent = 'Please specify the Origin when "Others" is selected!';
+                    mandatoryFieldsMessage.classList.remove('hidden');
+                    return false;
+                }
+            }
+
+            // If "Others" is selected for Processing Method, use the value from the otherProcessingMethodInput
+            if (processingMethod === 'Others') {
+                processingMethod = otherProcessingMethodInput.value.trim();
+                if (!processingMethod) { // If "Others" is selected but the text field is empty
+                    mandatoryFieldsMessage.textContent = 'Please specify the Processing Method when "Others" is selected!';
+                    mandatoryFieldsMessage.classList.remove('hidden');
+                    return false;
+                }
+            }
+
+            // If "Others" is selected for Brewing Method, use the value from the otherBrewingMethodInput
+            if (brewingMethod === 'Others') {
+                brewingMethod = otherBrewingMethodInput.value.trim();
+                if (!brewingMethod) { // If "Others" is selected but the text field is empty
+                    mandatoryFieldsMessage.textContent = 'Please specify the Brewing Method when "Others" is selected!';
+                    mandatoryFieldsMessage.classList.remove('hidden');
+                    return false;
+                }
+            }
+
+            // Get sensation values, converting blank to NaN for validation
+            const sensationAcidity = document.getElementById('sensationAcidity').value === '' ? NaN : parseInt(document.getElementById('sensationAcidity').value);
+            const sensationBody = document.getElementById('sensationBody').value === '' ? NaN : parseInt(document.getElementById('sensationBody').value);
+            const sensationSweetness = document.getElementById('sensationSweetness').value === '' ? NaN : parseInt(document.getElementById('sensationSweetness').value);
+            const sensationFlavor = document.getElementById('sensationFlavor').value === '' ? NaN : parseInt(document.getElementById('sensationFlavor').value);
+            const sensationAftertaste = document.getElementById('sensationAftertaste').value === '' ? NaN : parseInt(document.getElementById('sensationAftertaste').value);
+            const sensationBalance = document.getElementById('sensationBalance').value === '' ? NaN : parseInt(document.getElementById('sensationBalance').value);
+            const sensationOverall = document.getElementById('sensationOverall').value === '' ? NaN : parseInt(document.getElementById('sensationOverall').value);
+
+            // --- Mandatory Fields Validation ---
+            let isValid = true;
+            let errorMessage = [];
+
+            if (!origin) {
+                isValid = false;
+                errorMessage.push('Origin');
+            }
+            if (!waterTemperature || isNaN(parseFloat(waterTemperature))) { // Check for blank or non-numeric
+                isValid = false;
+                errorMessage.push('Water Temperature'); // Changed label
+            }
+            if (isNaN(sensationOverall) || sensationOverall < 1 || sensationOverall > 10) {
+                isValid = false;
+                errorMessage.push('Overall Impression');
+            }
+            if (!brewingMethod) { // New mandatory field validation
+                isValid = false;
+                errorMessage.push('Brewing Method');
+            }
+
+            if (!isValid) {
+                mandatoryFieldsMessage.textContent = `Please fill the mandatory fields: ${errorMessage.join(', ')}!`;
+                mandatoryFieldsMessage.classList.remove('hidden');
+                return false;
+            } else {
+                mandatoryFieldsMessage.classList.add('hidden');
+            }
+            // --- End Mandatory Fields Validation ---
+
+            // Basic validation for other Sensation scores (optional, but good practice)
+            const otherSensationScores = [sensationAcidity, sensationBody, sensationSweetness, sensationFlavor, sensationAftertaste, sensationBalance];
+            for (const score of otherSensationScores) {
+                if (isNaN(score) || score < 1 || score > 10) {
+                    showMessageBox('All sensation scores must be numbers between 1 and 10.', 'error');
+                    return false;
+                }
+            }
+
+            const [year, month, day] = roastingDate.split('-');
+            const formattedDate = `${day}-${month}-${year}`;
+
+            const newEntry = {
+                color: getNextColor(), // Assign a new color
+                coffeeBeans: coffeeBeans,
+                water: water,
+                coffeeWaterRatio: coffeeWaterRatio,
+                tds: tds,
+                extractionYield: extractionYield, // This will now correctly take the manual or auto value
+                origin,
+                processingMethod,
+                altitude: parseFloat(altitude) || '',
+                roastingDate: formattedDate,
+                roastingLevel,
+                brewingMethod,
+                waterTemperature: parseFloat(waterTemperature),
+                grinderBrand: grinderBrand,
+                grinderUnit: grinderUnit,
+                filteringTools: filteringTools,
+                turbulenceActions: turbulenceActions, // Save turbulence actions
+                sensation: {
+                    acidity: sensationAcidity,
+                    body: sensationBody,
+                    sweetness: sensationSweetness,
+                    flavor: sensationFlavor,
+                    aftertaste: sensationAftertaste,
+                    balance: sensationBalance,
+                    overall: sensationOverall
+                }
+            };
+
+            brewData.push(newEntry);
+            return true;
+        }
+
+        // Function to clear all input fields and set selects to default
+        function clearFormFields() {
+            coffeeBeansInput.value = '';
+            waterInput.value = '';
+            coffeeWaterRatioInput.value = '--';
+            tdsInput.value = '';
+            extractionYieldInput.value = '--'; // Clear new field
+            extractionYieldInput.readOnly = true; // Ensure it's read-only
+            toggleExtractionEditBtn.textContent = 'Manual Edit'; // Reset button text
+            isExtractionYieldManualEdit = false; // Reset state
+
+            document.getElementById('origin').value = '';
+            document.getElementById('processingMethod').value = '';
+            document.getElementById('altitude').value = '';
+            document.getElementById('roastingDate').value = '';
+            document.getElementById('roastingLevel').value = '';
+            document.getElementById('brewingMethod').value = '';
+            document.getElementById('waterTemperature').value = '';
+            document.getElementById('grinderBrand').value = '';
+            document.getElementById('grinderUnit').value = '';
+            document.getElementById('filteringTools').value = '';
+            sensationInputs.forEach(input => input.value = '');
+
+            // Clear and reset turbulence actions
+            turbulenceActionsContainer.innerHTML = ''; // Clear all existing rows
+            addTurbulenceActionRow(); // Add back one empty row
+
+            // Hide and clear the "Other Origin" field
+            otherOriginContainer.classList.add('hidden');
+            otherOriginInput.value = '';
+
+            // Hide and clear the "Other Processing Method" field
+            otherProcessingMethodContainer.classList.add('hidden');
+            otherProcessingMethodInput.value = '';
+
+            // Hide and clear the "Other Brewing Method" field
+            otherBrewingMethodContainer.classList.add('hidden');
+            otherBrewingMethodInput.value = '';
+
+            selectedRows.clear();
+            updateRadarChart();
+            mandatoryFieldsMessage.classList.add('hidden');
+        }
+
+        // Merged "Save and submit" button event listener
+        saveSubmitBtn.addEventListener('click', () => {
+            if (saveData()) {
+                selectedRows.clear();
+                selectedRows.add(brewData.length - 1); // Select the newly added entry
+
+                updateDataTable();
+                updateRadarChart();
+                clearFormFields(); // Clear fields after save and submit
+
+                showMessageBox('Record saved and ready for new entry!', 'success');
+            }
+        });
+
+        // Export to CSV functionality
+        exportCsvBtn.addEventListener('click', () => {
+            console.log('Export to CSV button clicked.');
+            if (brewData.length === 0) {
+                showMessageBox('No data to export.', 'info');
+                console.log('No data to export.');
+                return;
+            }
+
+            try {
+                // Prepare data for CSV, using the color's border color as its identifier
+                const dataToExport = brewData.map(entry => ({
+                    color: entry.color.borderColor, // Export the color string
+                    coffeeBeans: entry.coffeeBeans,
+                    water: entry.water,
+                    coffeeWaterRatio: entry.coffeeWaterRatio,
+                    tds: entry.tds,
+                    extractionYield: entry.extractionYield,
+                    origin: entry.origin,
+                    processingMethod: entry.processingMethod,
+                    altitude: entry.altitude,
+                    roastingDate: entry.roastingDate,
+                    roastingLevel: entry.roastingLevel,
+                    brewingMethod: entry.brewingMethod,
+                    waterTemperature: entry.waterTemperature,
+                    grinderBrand: entry.grinderBrand,
+                    grinderUnit: entry.grinderUnit,
+                    filteringTools: entry.filteringTools,
+                    // Stringify turbulenceActions array for CSV export
+                    turbulenceActions: JSON.stringify(entry.turbulenceActions || []),
+                    acidity: entry.sensation.acidity,
+                    body: entry.sensation.body,
+                    sweetness: entry.sensation.sweetness,
+                    flavor: entry.sensation.flavor,
+                    aftertaste: entry.sensation.aftertaste,
+                    balance: entry.sensation.balance,
+                    overallImpression: entry.sensation.overall
+                }));
+
+                console.log('Data to export:', dataToExport);
+
+                const fields = [
+                    'color',
+                    'coffeeBeans',
+                    'water',
+                    'coffeeWaterRatio',
+                    'tds',
+                    'extractionYield',
+                    'origin',
+                    'processingMethod',
+                    'altitude',
+                    'roastingDate',
+                    'roastingLevel',
+                    'brewingMethod',
+                    'waterTemperature',
+                    'grinderBrand',
+                    'grinderUnit',
+                    'filteringTools',
+                    'turbulenceActions', // New field for CSV
+                    'acidity',
+                    'body',
+                    'sweetness',
+                    'flavor',
+                    'aftertaste',
+                    'balance',
+                    'overallImpression'
+                ];
+
+                const csv = PapaParse.unparse(dataToExport, {
+                    header: true,
+                    columns: fields
+                });
+                console.log('Generated CSV content:', csv);
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                console.log('Created object URL:', url);
+
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'coffee_brewing_data.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                console.log('Link appended to body, attempting click...');
+                link.click();
+
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(link);
+                    console.log('Object URL revoked and link removed.');
+                }, 100);
+
+                showMessageBox('Data exported to CSV successfully!', 'success');
+
+            } catch (error) {
+                console.error('Error during CSV export:', error);
+                showMessageBox('Error exporting data. Check console for details.', 'error');
+            }
+        });
+
+        // Custom message box function
+        function showMessageBox(message, type) {
+            const msgBox = document.createElement('div');
+            msgBox.className = 'fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50';
+            if (type === 'success') {
+                msgBox.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                msgBox.classList.add('bg-red-500');
+            } else {
+                msgBox.classList.add('bg-gray-700');
+            }
+            msgBox.textContent = message;
+            document.body.appendChild(msgBox);
+
+            setTimeout(() => {
+                msgBox.remove();
+            }, 3000);
+        }
+
+        // Collapsible section logic
+        document.querySelectorAll('.session-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const contentId = header.dataset.target;
+                const content = document.getElementById(contentId);
+                const icon = header.querySelector('.toggle-icon');
+
+                if (content.classList.contains('expanded')) {
+                    content.classList.remove('expanded');
+                    header.classList.remove('expanded');
+                } else {
+                    content.classList.add('expanded');
+                    header.classList.add('expanded');
+                }
+            });
+        });
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeRadarChart();
+            updateDataTable();
+            updateRadarChart(); // Show initial live preview of sensation inputs
+            calculateBrewingMetrics(); // Calculate initial metrics on load
+            addTurbulenceActionRow(); // Add the initial turbulence action row
+
+            // Ensure all sections are collapsed by default on load except the new ratio section
+            document.querySelectorAll('.session-content').forEach(content => {
+                if (content.id !== 'ratioContent') { // Keep ratioContent expanded
+                    content.classList.remove('expanded');
+                }
+            });
+            document.querySelectorAll('.session-header').forEach(header => {
+                if (header.dataset.target !== 'ratioContent') { // Keep ratioContent header expanded
+                    header.classList.remove('expanded');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
