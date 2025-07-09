@@ -65,8 +65,7 @@
             display: flex;
             flex-direction: column;
             flex-grow: 1; /* Allows it to grow and fill body height */
-            overflow-y: auto; /* Allow vertical scrolling for the entire app container if content exceeds max-height */
-            overflow-x: auto; /* Allow horizontal scrolling for the entire app container if content exceeds max-width */
+            overflow: hidden; /* Crucial: Prevents app-container from expanding vertically */
         }
 
         /* Styles for session headers and content */
@@ -214,8 +213,7 @@
             grid-template-columns: 350px 5fr; /* Changed left column to 350px */
             gap: 2rem; /* Increased space between columns */
             flex-grow: 1; /* Allows grid to take up remaining height */
-            overflow-x: auto; /* Allow horizontal scrolling for the grid itself */
-            overflow-y: hidden; /* Vertical scrolling handled by children */
+            overflow: hidden; /* Prevents this grid from causing outer scroll */
             padding-top: 1.5rem; /* Add some padding from the title */
         }
 
@@ -224,7 +222,7 @@
             display: flex;
             flex-direction: column;
             gap: 2rem; /* Increased space between input panels */
-            overflow-y: auto; /* Allow vertical scrolling within the left column */
+            overflow-y: auto; /* Crucial: Allows vertical scrolling within the left column */
             flex-shrink: 0; /* Prevent shrinking */
             padding-right: 0.5rem; /* Small padding to prevent scrollbar from touching content */
         }
@@ -237,10 +235,7 @@
             background-color: rgba(255, 255, 255, 0.25); /* Apply 75% transparent white here */
             box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03); /* Softer shadow */
         }
-        .left-column-panels .session-content {
-            flex-grow: 1;
-            overflow-y: auto; /* Allow internal scrolling for content within each session box */
-        }
+        /* Removed .left-column-panels .session-content overflow-y: auto; to avoid double scrollbars */
         .left-column-panels .grid {
             gap: 1rem; /* Increased gap within form grids */
         }
@@ -356,52 +351,67 @@
             display: none;
         }
 
+        /* New wrapper for the main content grid, including the tabs */
+        /* This wrapper will define the overall grid structure for both tabs and content */
+        .main-content-grid-wrapper {
+            display: grid;
+            grid-template-columns: 350px 5fr; /* Define the two columns for the entire content area */
+            gap: 2rem; /* Define the gap between columns */
+            flex-grow: 1; /* Allow it to grow and fill available vertical space */
+            overflow: hidden; /* Prevents this grid from causing outer scroll */
+            /* No padding here, as it's handled by app-container and individual elements */
+        }
+
         /* Styles for Tab Navigation */
         .tab-bar {
-            @apply flex mb-6 flex-shrink-0 px-4; /* Removed justify-center, added px-4 */
-            border-bottom: 1px solid rgba(220, 220, 220, 0.5); /* Softer, more transparent border */
-            background-color: rgba(255, 255, 255, 0.25); /* 75% transparent white */
-            border-radius: 0.5rem 0.5rem 0 0; /* Rounded top corners */
-            overflow: hidden; /* Hide overflow for rounded corners */
+            @apply flex flex-shrink-0;
+            grid-column: 1 / -1; /* Span across both columns of the main grid */
+            background-color: transparent;
+            border-bottom: 1px solid rgba(220, 220, 220, 0.5); /* Subtle bottom line */
+            border-radius: 0; /* No rounded corners on the bar */
+            overflow: hidden;
             margin-top: 1rem; /* Space below the title */
-            margin-left: 1rem; /* Matches padding of tab-content-container */
-            margin-right: 1rem; /* Matches padding of tab-content-container */
+            margin-bottom: 1rem; /* Space before content */
+            padding: 0; /* No internal padding */
         }
 
         .tab-button {
-            @apply py-3 px-6 text-center text-gray-700 cursor-pointer transition duration-200 ease-in-out;
-            display: inline-flex; /* Ensure it behaves as a block-like element */
-            align-items: center; /* Vertically center content */
-            justify-content: center; /* Horizontally center content */
+            @apply py-2 px-4 text-center text-gray-700 font-semibold text-sm cursor-pointer transition duration-200 ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             border-bottom: 3px solid transparent; /* Highlight border */
-            flex-grow: 1; /* Distribute space evenly */
-            /* Removed max-width: 150px; */
-            background-color: rgba(255, 255, 255, 0.25); /* 75% transparent white */
-            border-radius: 0.5rem 0.5rem 0 0; /* Rounded top corners */
-            font-size: 0.875rem; /* Explicitly set font size */
-            font-weight: 600; /* Explicitly set font weight for semibold */
+            flex-grow: 1; /* Distribute space evenly within the flex container (.tab-bar) */
+            background-color: transparent; /* No background for inactive tabs */
+            border-radius: 0; /* No rounded corners on buttons */
         }
 
         .tab-button.active {
             @apply text-amber-800 border-amber-800; /* Active tab color and border */
-            background-color: rgba(255, 255, 255, 0.5); /* Slightly less transparent when active */
+            background-color: transparent; /* No background for active tab */
         }
 
+        /* Tab Content Container - now directly participates in the main grid */
         .tab-content-container {
             @apply flex-grow overflow-y-auto; /* Allow content to scroll if needed */
-            background-color: rgba(255, 255, 255, 0.25); /* 75% transparent white */
-            border-radius: 0 0 1rem 1rem; /* Rounded bottom corners */
-            padding: 1rem; /* Padding inside the content container */
-            border: 1px solid rgba(220, 220, 220, 0.25); /* Transparent border */
-            border-top: none; /* No top border as it connects to the tab bar */
+            grid-column: 1 / -1; /* Span across both columns of the main grid */
+            background-color: transparent; /* No background for content container */
+            border-radius: 0; /* No rounded corners */
+            padding: 0; /* No padding, content grid handles it */
+            border: none; /* No border for content container */
+            display: contents; /* Allows children (tab-panes) to participate in the parent grid */
         }
 
         .tab-pane {
             display: none; /* Hide all tab panes by default */
+            grid-column: 1 / -1; /* Default to spanning all columns, will be overridden by active */
         }
 
         .tab-pane.active {
-            display: block; /* Show active tab pane */
+            display: grid; /* Make the active tab pane a grid container */
+            grid-template-columns: subgrid; /* Inherit columns from parent grid (main-content-grid-wrapper) */
+            grid-column: 1 / -1; /* Span across all columns */
+            padding-top: 1.5rem; /* Add padding from the top of the content grid */
         }
     </style>
 </head>
@@ -409,19 +419,20 @@
     <div class="app-container">
         <h1 class="text-4xl font-normal text-center text-black mb-6 flex-shrink-0">Your Coffee Brewing Lab</h1>
 
-        <!-- Tab Bar -->
-        <div class="tab-bar">
-            <button class="tab-button active" data-tab="lab">Lab</button>
-            <button class="tab-button" data-tab="tutorial">Tutorial</button>
-            <button class="tab-button" data-tab="analytics">Analytics</button>
-            <button class="tab-button" data-tab="qna">Q&A</button>
-        </div>
+        <!-- Main content grid wrapper for tabs and content panels -->
+        <div class="main-content-grid-wrapper">
+            <!-- Tab Bar -->
+            <div class="tab-bar">
+                <button class="tab-button active" data-tab="lab">Lab</button>
+                <button class="tab-button" data-tab="tutorial">Tutorial</button>
+                <button class="tab-button" data-tab="analytics">Analytics</button>
+                <button class="tab-button" data-tab="qna">Q&A</button>
+            </div>
 
-        <!-- Tab Content Container -->
-        <div class="tab-content-container">
-            <!-- Lab Tab Content -->
-            <div id="lab" class="tab-pane active">
-                <div class="dashboard-content-grid">
+            <!-- Tab Content Container -->
+            <div class="tab-content-container">
+                <!-- Lab Tab Content -->
+                <div id="lab" class="tab-pane active">
                     <!-- Left Column: Input Sessions -->
                     <div class="left-column-panels">
                         <!-- New Ratio Calculation Section -->
@@ -1248,7 +1259,7 @@
                 waterTemperature: parseFloat(waterTemperature),
                 grinderBrand: grinderBrand,
                 grinderUnit: grinderUnit,
-                filteringTools: filteringTools,
+                    filteringTools: filteringTools,
                 turbulenceActions: turbulenceActions, // Save turbulence actions
                 sensation: {
                     acidity: sensationAcidity,
