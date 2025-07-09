@@ -11,43 +11,67 @@
     <!-- Chart.js CDN for Radar Chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <!-- PapaParse CDN for CSV Export -->
+    <!-- PapaParse CDN for CSV Export (still included for potential future use, though button is removed) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8f8f8; /* Lighter white background */
+            background-color: #fcf8f3; /* Fallback background color */
             color: #333333; /* Darker text for contrast */
             min-height: 100vh; /* Ensure body takes full viewport height */
             display: flex;
             flex-direction: column;
-            padding: 1.5rem; /* Equivalent to p-6 */
+            padding: 2rem; /* Increased padding around the entire app */
             overflow-y: auto; /* Allow overall body vertical scrolling */
             overflow-x: auto; /* Allow overall body horizontal scrolling */
             font-size: 0.875rem; /* Set base font size for all words */
             font-weight: 400; /* Default to non-bold */
+            position: relative; /* Needed for pseudo-element positioning */
+            z-index: 0; /* Ensure body content is above the pseudo-element */
         }
+
+        /* Full page background image with transparency */
+        body::before {
+            content: "";
+            position: fixed; /* Fixed to viewport */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://www.architecturecourses.org/sites/default/files/styles/image_1280x720/public/2024-07/minimalist-living-room-poor-lighting.webp?itok=qfoFYvHu');
+            background-size: cover; /* Fit to layout without distorting */
+            background-position: center center; /* Center the image */
+            background-repeat: no-repeat;
+            opacity: 0.4; /* 60% transparent (1 - 0.6 = 0.4 opacity) */
+            z-index: -1; /* Place behind other content */
+        }
+
+        /* Removed old corner image styles to avoid clutter */
+        html::before, html::after {
+            display: none;
+        }
+
         /* Main application container, optimized for desktop screens */
         .app-container {
             @apply mx-auto; /* Center the container horizontally */
-            max-width: 1440px; /* Target max width for desktop optimization */
+            max-width: 1366px; /* Set max-width to 1366px as requested */
+            max-height: 850px; /* Adjusted max-height for better fit */
             width: 100%; /* Take full width up to max-width */
-            background-color: #ffffff; /* White background */
-            padding: 2rem; /* Equivalent to p-8 */
-            border-radius: 0.75rem; /* Equivalent to rounded-xl */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Equivalent to shadow-lg */
-            border: 1px solid #e0e0e0; /* Equivalent to border border-gray-200 */
+            background-color: rgba(255, 255, 255, 0.25); /* 75% transparent white */
+            padding: 3rem; /* Increased padding inside the app container */
+            border-radius: 1rem; /* More rounded corners */
+            box-shadow: 0 5px 15px -3px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.03); /* Softer shadow */
+            border: 1px solid rgba(220, 220, 220, 0.25); /* Warmer, softer border, also transparent */
             display: flex;
             flex-direction: column;
             flex-grow: 1; /* Allows it to grow and fill body height */
-            min-height: calc(100vh - 3rem); /* Ensure it's at least viewport height for smaller content */
-            overflow-y: auto; /* Allow vertical scrolling for the entire app container */
-            overflow-x: auto; /* Allow horizontal scrolling for the entire app container */
+            overflow-y: auto; /* Allow vertical scrolling for the entire app container if content exceeds max-height */
+            overflow-x: auto; /* Allow horizontal scrolling for the entire app container if content exceeds max-width */
         }
 
         /* Styles for session headers and content */
         .session-header {
-            background-color: #ffffff; /* White header */
+            background-color: rgba(255, 255, 255, 0.25); /* 75% transparent white */
             color: #333333; /* Dark text */
             border-bottom: 1px solid #e0e0e0; /* Light gray border */
             padding: 1rem;
@@ -60,16 +84,14 @@
             cursor: pointer; /* Indicate it's clickable */
         }
         .session-header .toggle-icon {
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease; /* Keep transition for smooth change if needed for other properties */
             font-size: inherit; /* Make the icon size inherit from the header */
             line-height: 1; /* Ensure proper vertical alignment */
         }
-        .session-header.expanded .toggle-icon {
-            transform: rotate(90deg); /* Rotate + to - */
-        }
+        /* Removed transform: rotate(90deg) for expanded state as we are changing text content */
 
         .session-content {
-            background-color: #ffffff; /* White content background */
+            background-color: rgba(255, 255, 255, 0.25); /* 75% transparent white */
             max-height: 0; /* Initial collapsed state */
             padding: 0 1rem; /* Initial padding for collapsed state */
             opacity: 0; /* Hidden initially */
@@ -91,26 +113,29 @@
 
         /* Custom styles for buttons and inputs */
         .btn-primary {
-            @apply bg-black hover:bg-gray-800 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out;
+            /* Changed from black to warm dark brown, softer shadow, more padding */
+            @apply bg-amber-800 hover:bg-amber-900 text-white font-bold py-3 px-8 rounded-lg shadow-sm transition duration-300 ease-in-out;
             font-size: 0.875rem; /* Ensure button text is 0.875rem */
             font-weight: bold; /* Keep button text bold */
         }
         .btn-secondary {
-            @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out;
+            /* Changed from gray to warm light cream, softer shadow, more padding */
+            @apply bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-3 px-8 rounded-lg shadow-sm transition duration-300 ease-in-out;
             font-size: 0.875rem; /* Ensure button text is 0.875rem */
             font-weight: bold; /* Keep button text bold */
         }
         /* Base input field styling */
         .input-field, .select-field {
-            @apply px-3 py-2 border border-gray-400 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black;
-            background-color: white; /* Explicitly set background */
+            /* Softer border, focus ring matches new primary color */
+            @apply px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-800 focus:border-amber-800;
+            background-color: white; /* Explicitly set background to opaque white */
             color: #333333; /* Explicitly set text color */
             font-size: 0.875rem; /* Changed to 0.875rem */
             font-weight: normal; /* Non-bold */
         }
         table {
             border-collapse: separate;
-            border-spacing: 0 8px; /* Add space between rows */
+            border-spacing: 0 12px; /* Increased space between rows */
             width: 100%; /* Ensure table takes full width of its container */
         }
         th, td {
@@ -121,14 +146,14 @@
             font-size: 0.875rem; /* Changed to 0.875rem */
         }
         th {
-            background-color: #f0f0f0; /* Light gray header */
+            background-color: #f5f5f0; /* Warmer light gray header */
             font-weight: bold; /* Made bold */
             color: #333333; /* Dark text */
             text-transform: uppercase;
             letter-spacing: 0.05em;
             position: sticky; /* Sticky header for scrolling table */
             top: 0;
-            background-color: #f0f0f0;
+            background-color: #f5f5f0;
             z-index: 10;
         }
         td {
@@ -138,7 +163,7 @@
             border-bottom: none;
         }
         tr.selected-row {
-            background-color: #e6e6e6; /* Slightly darker gray for selected rows */
+            background-color: #f0f0e8; /* Slightly darker, warmer gray for selected rows */
         }
         .chart-container {
             position: relative;
@@ -159,15 +184,15 @@
         }
         /* Common style for the main action button ("Save and submit") */
         #saveSubmitBtn {
-            border: 2px solid #333333; /* Solid grind line effect */
+            border: 2px solid #a16207; /* Solid grind line effect, matches new primary color */
             background-color: #ffffff;
-            color: #333333;
+            color: #a16207; /* Text color matches primary */
             font-size: 0.875rem; /* Changed to 0.875rem */
             font-weight: bold; /* Made bold */
             display: block; /* Make it a block element */
             margin-left: auto; /* Auto margin left */
             margin-right: auto; /* Auto margin right */
-            @apply hover:bg-gray-100 py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out w-64; /* Apply other button styles and fixed width */
+            @apply hover:bg-amber-50 py-3 px-8 rounded-lg shadow-sm transition duration-300 ease-in-out w-64; /* Apply other button styles and fixed width */
             flex-shrink: 0; /* Prevent button from shrinking */
         }
         /* Style for the mandatory fields error message */
@@ -184,10 +209,10 @@
         .dashboard-content-grid {
             display: grid;
             /* Adjusted grid columns for desktop optimization:
-               Left column: fixed 200px (half of 400px)
+               Left column: fixed 350px
                Right column: flexible 5 units (wider) */
-            grid-template-columns: 200px 5fr; /* Changed left column to 200px */
-            gap: 1.5rem; /* Space between columns */
+            grid-template-columns: 350px 5fr; /* Changed left column to 350px */
+            gap: 2rem; /* Increased space between columns */
             flex-grow: 1; /* Allows grid to take up remaining height */
             overflow-x: auto; /* Allow horizontal scrolling for the grid itself */
             overflow-y: hidden; /* Vertical scrolling handled by children */
@@ -198,33 +223,33 @@
         .left-column-panels {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem; /* Space between input panels */
+            gap: 2rem; /* Increased space between input panels */
             overflow-y: auto; /* Allow vertical scrolling within the left column */
             flex-shrink: 0; /* Prevent shrinking */
             padding-right: 0.5rem; /* Small padding to prevent scrollbar from touching content */
         }
-        .left-column-panels > div { /* Target individual session divs */
+        .left-column-panels > div { /* Target individual session divs (session-card) */
             flex-shrink: 0; /* Prevent individual session boxes from shrinking */
             display: flex;
             flex-direction: column;
-            border: 1px solid #e0e0e0; /* Add border as per image */
-            border-radius: 0.5rem; /* Rounded corners */
-            background-color: #ffffff; /* White background */
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Subtle shadow */
+            border: 1px solid #dcdcdc; /* Warmer, softer border */
+            border-radius: 0.75rem; /* More rounded corners */
+            background-color: rgba(255, 255, 255, 0.25); /* Apply 75% transparent white here */
+            box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03); /* Softer shadow */
         }
         .left-column-panels .session-content {
             flex-grow: 1;
             overflow-y: auto; /* Allow internal scrolling for content within each session box */
         }
         .left-column-panels .grid {
-            gap: 0.75rem;
+            gap: 1rem; /* Increased gap within form grids */
         }
 
         /* Right Column for Results and Records */
         .right-column-panels {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem; /* Space between result and record panels */
+            gap: 2rem; /* Increased space between result and record panels */
             overflow-y: auto; /* Allow vertical scrolling within the right column */
             overflow-x: auto; /* Allow horizontal scrolling for the right panel itself */
             flex-shrink: 0; /* Prevent shrinking */
@@ -234,29 +259,22 @@
             flex-shrink: 0; /* Prevent individual panels from shrinking */
             display: flex;
             flex-direction: column;
-            border: 1px solid #e0e0e0; /* Add border as per image */
-            border-radius: 0.5rem; /* Rounded corners */
-            background-color: #ffffff; /* White background */
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Subtle shadow */
+            border: 1px solid #dcdcdc; /* Warmer, softer border */
+            border-radius: 0.75rem; /* More rounded corners */
+            background-color: rgba(255, 255, 255, 0.25); /* Apply 75% transparent white here */
+            box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03); /* Subtle shadow */
             flex-grow: 1; /* Allow these panels to grow vertically */
         }
 
         /* Specific adjustments for Your Result and My Lab Record within right column */
         .your-result-panel {
-            /* Fixed height for this panel */
-            height: 450px;
-            flex-shrink: 0; /* Ensure it doesn't shrink */
-            overflow-y: auto; /* Allow internal scrolling if content overflows fixed height */
+            flex-grow: 1; /* Allow it to grow and fill available space */
+            height: auto; /* Remove fixed height */
+            min-height: 450px; /* Set a minimum height to ensure chart visibility */
+            overflow-y: auto; /* Allow internal scrolling if content overflows */
         }
-        .my-lab-record-panel {
-            flex-grow: 1; /* Allow My Lab Record to take more flexible height */
-            min-height: 250px; /* Ensure minimum height for table */
-        }
-        .my-lab-record-panel .table-container {
-            flex-grow: 1;
-            overflow-x: auto; /* Ensure table itself scrolls horizontally */
-            padding: 1rem; /* Padding inside the panel */
-        }
+        /* Removed .my-lab-record-panel styles as the element is removed */
+
         .right-column-panels h2 {
             padding: 1rem; /* Consistent padding for headers */
             border-bottom: 1px solid #e0e0e0;
@@ -271,7 +289,7 @@
         .right-column-panels #mandatoryFieldsMessage {
             padding-bottom: 1rem;
         }
-        /* Style for the color swatch in the table */
+        /* Style for the color swatch in the table (no longer used for table, but might be for chart legend if re-introduced) */
         .color-swatch {
             display: inline-block;
             width: 18px; /* Small square size */
@@ -289,8 +307,9 @@
             justify-content: space-between; /* Pushes button to the right */
         }
         .manual-edit-btn {
-            @apply px-3 py-1 text-xs bg-white text-gray-700 shadow-sm transition duration-150 ease-in-out;
-            border: 1px solid #333333; /* Dark border as in the image */
+            /* Adjusted colors to match new palette */
+            @apply px-3 py-1 text-xs bg-amber-50 text-amber-800 shadow-sm transition duration-150 ease-in-out;
+            border: 1px solid #a16207; /* Dark border as in the image */
             border-radius: 0.375rem; /* rounded-md */
             height: 32px; /* Consistent height to match label's line-height */
             display: flex;
@@ -306,9 +325,9 @@
         .turbulence-action-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr); /* Three columns for Action, Time, Volume */
-            gap: 0.5rem; /* Small gap between fields */
+            gap: 0.75rem; /* Increased gap between fields */
             align-items: end; /* Align items to the bottom */
-            margin-bottom: 0.75rem; /* Space between rows */
+            margin-bottom: 1rem; /* Increased space between rows */
         }
         .turbulence-action-row label {
             grid-column: span 1; /* Label spans one column */
@@ -336,298 +355,333 @@
         .turbulence-action-row:not(:first-child) .action-volume-label {
             display: none;
         }
+
+        /* Styles for Tab Navigation */
+        .tab-bar {
+            @apply flex mb-6 flex-shrink-0 px-4; /* Removed justify-center, added px-4 */
+            border-bottom: 1px solid rgba(220, 220, 220, 0.5); /* Softer, more transparent border */
+            background-color: rgba(255, 255, 255, 0.25); /* 75% transparent white */
+            border-radius: 0.5rem 0.5rem 0 0; /* Rounded top corners */
+            overflow: hidden; /* Hide overflow for rounded corners */
+            margin-top: 1rem; /* Space below the title */
+            margin-left: 1rem; /* Matches padding of tab-content-container */
+            margin-right: 1rem; /* Matches padding of tab-content-container */
+        }
+
+        .tab-button {
+            @apply py-3 px-6 text-center text-gray-700 cursor-pointer transition duration-200 ease-in-out;
+            display: inline-flex; /* Ensure it behaves as a block-like element */
+            align-items: center; /* Vertically center content */
+            justify-content: center; /* Horizontally center content */
+            border-bottom: 3px solid transparent; /* Highlight border */
+            flex-grow: 1; /* Distribute space evenly */
+            /* Removed max-width: 150px; */
+            background-color: rgba(255, 255, 255, 0.25); /* 75% transparent white */
+            border-radius: 0.5rem 0.5rem 0 0; /* Rounded top corners */
+            font-size: 0.875rem; /* Explicitly set font size */
+            font-weight: 600; /* Explicitly set font weight for semibold */
+        }
+
+        .tab-button.active {
+            @apply text-amber-800 border-amber-800; /* Active tab color and border */
+            background-color: rgba(255, 255, 255, 0.5); /* Slightly less transparent when active */
+        }
+
+        .tab-content-container {
+            @apply flex-grow overflow-y-auto; /* Allow content to scroll if needed */
+            background-color: rgba(255, 255, 255, 0.25); /* 75% transparent white */
+            border-radius: 0 0 1rem 1rem; /* Rounded bottom corners */
+            padding: 1rem; /* Padding inside the content container */
+            border: 1px solid rgba(220, 220, 220, 0.25); /* Transparent border */
+            border-top: none; /* No top border as it connects to the tab bar */
+        }
+
+        .tab-pane {
+            display: none; /* Hide all tab panes by default */
+        }
+
+        .tab-pane.active {
+            display: block; /* Show active tab pane */
+        }
     </style>
 </head>
 <body class="p-6">
     <div class="app-container">
-        <h1 class="text-4xl font-extrabold text-center text-black mb-6 flex-shrink-0">Your Coffee Brewing Lab</h1>
+        <h1 class="text-4xl font-normal text-center text-black mb-6 flex-shrink-0">Your Coffee Brewing Lab</h1>
 
-        <div class="dashboard-content-grid">
-            <!-- Left Column: Input Sessions -->
-            <div class="left-column-panels">
-                <!-- New Ratio Calculation Section -->
-                <div class="session-card">
-                    <div class="session-header rounded-t-lg" data-target="ratioContent">
-                        <span>Brewing Ratio</span>
-                        <span class="toggle-icon">+</span> <!-- Changed to plus sign -->
-                    </div>
-                    <div id="ratioContent" class="session-content expanded">
-                        <div class="grid grid-cols-1 gap-4">
-                            <div>
-                                <label for="coffeeBeans" class="block text-sm font-medium text-gray-700">Coffee beans (g)</label>
-                                <input type="number" id="coffeeBeans" class="input-field block w-full rounded-md" placeholder="e.g., 20">
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+            <button class="tab-button active" data-tab="lab">Lab</button>
+            <button class="tab-button" data-tab="tutorial">Tutorial</button>
+            <button class="tab-button" data-tab="analytics">Analytics</button>
+            <button class="tab-button" data-tab="qna">Q&A</button>
+        </div>
+
+        <!-- Tab Content Container -->
+        <div class="tab-content-container">
+            <!-- Lab Tab Content -->
+            <div id="lab" class="tab-pane active">
+                <div class="dashboard-content-grid">
+                    <!-- Left Column: Input Sessions -->
+                    <div class="left-column-panels">
+                        <!-- New Ratio Calculation Section -->
+                        <div class="session-card">
+                            <div class="session-header rounded-t-lg" data-target="ratioContent">
+                                <span>Brewing Ratio</span>
+                                <span class="toggle-icon">+</span> <!-- Initial state will be set by JS -->
                             </div>
-                            <div>
-                                <label for="water" class="block text-sm font-medium text-gray-700">Water (g)</label>
-                                <input type="number" id="water" class="input-field block w-full rounded-md" placeholder="e.g., 300">
-                            </div>
-                            <div>
-                                <label for="coffeeWaterRatio" class="block text-sm font-medium text-gray-700">Coffee-to-water ratio</label>
-                                <input type="text" id="coffeeWaterRatio" class="input-field block w-full rounded-md" readonly value="--">
-                            </div>
-                            <div>
-                                <label for="tds" class="block text-sm font-medium text-gray-700">TDS (%)</label>
-                                <input type="number" id="tds" class="input-field block w-full rounded-md" placeholder="e.g., 1.3">
-                            </div>
-                            <div>
-                                <div class="extraction-label-group">
-                                    <label for="extractionYield" class="text-sm font-medium text-gray-700">Extraction Yield (%)</label>
-                                    <button id="toggleExtractionEditBtn" class="manual-edit-btn">Manual Edit</button>
+                            <div id="ratioContent" class="session-content">
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label for="coffeeBeans" class="block text-sm font-medium text-gray-700">Coffee beans (g)</label>
+                                        <input type="number" id="coffeeBeans" class="input-field block w-full rounded-md" placeholder="e.g., 20">
+                                    </div>
+                                    <div>
+                                        <label for="water" class="block text-sm font-medium text-gray-700">Water (g)</label>
+                                        <input type="number" id="water" class="input-field block w-full rounded-md" placeholder="e.g., 300">
+                                    </div>
+                                    <div>
+                                        <label for="coffeeWaterRatio" class="block text-sm font-medium text-gray-700">Coffee-to-water ratio</label>
+                                        <input type="text" id="coffeeWaterRatio" class="input-field block w-full rounded-md" readonly value="--">
+                                    </div>
+                                    <div>
+                                        <label for="tds" class="block text-sm font-medium text-gray-700">TDS (%)</label>
+                                        <input type="number" id="tds" class="input-field block w-full rounded-md" placeholder="e.g., 1.3">
+                                    </div>
+                                    <div>
+                                        <div class="extraction-label-group">
+                                            <label for="extractionYield" class="text-sm font-medium text-gray-700">Extraction Yield (%)</label>
+                                            <button id="toggleExtractionEditBtn" class="manual-edit-btn">Manual Edit</button>
+                                        </div>
+                                        <input type="text" id="extractionYield" class="input-field block w-full mt-1" readonly value="--">
+                                    </div>
                                 </div>
-                                <input type="text" id="extractionYield" class="input-field block w-full mt-1" readonly value="--">
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Bean Info Section -->
-                <div class="session-card">
-                    <div class="session-header rounded-t-lg" data-target="beanInfoContent">
-                        <span>Bean Info</span>
-                        <span class="toggle-icon">+</span> <!-- Changed to plus sign -->
-                    </div>
-                    <div id="beanInfoContent" class="session-content">
-                        <div class="grid grid-cols-1 gap-4">
-                            <div>
-                                <label for="origin" class="block text-sm font-medium text-gray-700">Origin <span class="text-red-500">*</span></label>
-                                <select id="origin" class="select-field block w-full rounded-md">
-                                    <option value="">Select Origin</option>
-                                    <option value="Brazil">Brazil</option>
-                                    <option value="Colombia">Colombia</option>
-                                    <option value="Costa Rica">Costa Rica</option>
-                                    <option value="Ethiopia">Ethiopia</option>
-                                    <option value="Guatemala">Guatemala</option>
-                                    <option value="Honduras">Honduras</option>
-                                    <option value="India">India</option>
-                                    <option value="Indonesia">Indonesia</option>
-                                    <option value="Kenya">Kenya</option>
-                                    <option value="Mexico">Mexico</option>
-                                    <option value="Peru">Peru</option>
-                                    <option value="Vietnam">Vietnam</option>
-                                    <option value="Others">Others</option>
-                                </select>
+                        <!-- Bean Info Section -->
+                        <div class="session-card">
+                            <div class="session-header rounded-t-lg" data-target="beanInfoContent">
+                                <span>Bean Info</span>
+                                <span class="toggle-icon">+</span> <!-- Initial state will be set by JS -->
                             </div>
-                            <div id="otherOriginContainer" class="hidden">
-                                <label for="otherOrigin" class="block text-sm font-medium text-gray-700">Other Origin (Please Specify)</label>
-                                <input type="text" id="otherOrigin" class="input-field block w-full rounded-md" placeholder="e.g., Rwanda">
-                            </div>
-                            <div>
-                                <label for="processingMethod" class="block text-sm font-medium text-gray-700">Processing methods</label>
-                                <select id="processingMethod" class="select-field block w-full rounded-md">
-                                    <option value="">Select Processing Method</option>
-                                    <option value="Washed (Wet) Process">Washed (Wet) Process</option>
-                                    <option value="Natural (Dry) Process">Natural (Dry) Process</option>
-                                    <option value="Pulped Natural (Semi-Dry) Process">Pulped Natural (Semi-Dry) Process</option>
-                                    <option value="Honey Process (Semi-Washed)">Honey Process (Semi-Washed)</option>
-                                    <option value="Wet-Hulled (Giling Basah)">Wet-Hulled (Giling Basah)</option>
-                                    <option value="Anaerobic Fermentation">Anaerobic Fermentation</option>
-                                    <option value="Carbonic Maceration">Carbonic Maceration</option>
-                                    <option value="Others">Others</option>
-                                </select>
-                            </div>
-                            <div id="otherProcessingMethodContainer" class="hidden">
-                                <label for="otherProcessingMethod" class="block text-sm font-medium text-gray-700">Other Processing Method (Please Specify)</label>
-                                <input type="text" id="otherProcessingMethod" class="input-field block w-full rounded-md" placeholder="e.g., Experimental Fermentation">
-                            </div>
-                            <div>
-                                <label for="altitude" class="block text-sm font-medium text-gray-700">Altitude (m)</label>
-                                <input type="number" id="altitude" class="input-field block w-full rounded-md" placeholder="e.g., 1500">
-                            </div>
-                            <div>
-                                <label for="roastingDate" class="block text-sm font-medium text-gray-700">Roasting Date</label>
-                                <input type="date" id="roastingDate" class="input-field block w-full rounded-md">
-                            </div>
-                            <div>
-                                <label for="roastingLevel" class="block text-sm font-medium text-gray-700">Level of Roasting</label>
-                                <select id="roastingLevel" class="select-field block w-full rounded-md">
-                                    <option value="">Select Level</option>
-                                    <option value="Cinnamon Roast: Agtron: ~90–100">Cinnamon Roast: Agtron: ~90–100</option>
-                                    <option value="Light Roast: Agtron Score: ~70–90">Light Roast: Agtron Score: ~70–90</option>
-                                    <option value="Medium Roast: Agtron Score: ~50–70">Medium Roast: Agtron Score: ~50–70</option>
-                                    <option value="Medium-Dark Roast: Agtron Score ~45–55">Medium-Dark Roast: Agtron Score ~45–55</option>
-                                    <option value="Dark Roast: Agtron Score: ~30–50">Dark Roast: Agtron Score: ~30–50</option>
-                                    <option value="Vienna/French/Italian Roast: Agtron <30">Vienna/French/Italian Roast: Agtron <30</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Brewing Section -->
-                <div class="session-card">
-                    <div class="session-header" data-target="brewingContent">
-                        <span>Brewing</span>
-                        <span class="toggle-icon">+</span>
-                    </div>
-                    <div id="brewingContent" class="session-content">
-                        <div class="grid grid-cols-1 gap-4">
-                            <div>
-                                <label for="brewingMethod" class="block text-sm font-medium text-gray-700">Brewing Method</label>
-                                <select id="brewingMethod" class="select-field block w-full rounded-md">
-                                    <option value="">Select Brewing Method</option>
-                                    <option value="Pour-Over">Pour-Over</option>
-                                    <option value="French Press">French Press</option>
-                                    <option value="AeroPress">AeroPress</option>
-                                    <option value="Espresso">Espresso</option>
-                                    <option value="Espresso Ristretto">Espresso Ristretto</option>
-                                    <option value="Espresso Lungo">Espresso Lungo</option>
-                                    <option value="Cold Brew">Cold Brew</option>
-                                    <option value="Clever Dripper">Clever Dripper</option>
-                                    <option value="Moka Pot">Moka Pot</m>
-                                    <option value="Machine Drip">Machine Drip</option>
-                                    <option value="Others">Others</option>
-                                </select>
-                            </div>
-                            <div id="otherBrewingMethodContainer" class="hidden">
-                                <label for="otherBrewingMethod" class="block text-sm font-medium text-gray-700">Other Brewing Method (Please Specify)</label>
-                                <input type="text" id="otherBrewingMethod" class="input-field block w-full rounded-md" placeholder="e.g., Siphon">
-                            </div>
-                            <div>
-                                <label for="waterTemperature" class="block text-sm font-medium text-gray-700">Water Temperature (°C) <span class="text-red-500">*</span></label>
-                                <input type="number" id="waterTemperature" class="input-field block w-full rounded-md" placeholder="e.g., 92">
-                            </div>
-                            <div>
-                                <label for="grinderBrand" class="block text-sm font-medium text-gray-700">Your Grinder Brand</label>
-                                <input type="text" id="grinderBrand" class="input-field block w-full rounded-md" placeholder="e.g., Baratza Encore">
-                            </div>
-                            <div>
-                                <label for="grinderUnit" class="block text-sm font-medium text-gray-700">Your Grinder Unit</label>
-                                <input type="text" id="grinderUnit" class="input-field block w-full rounded-md" placeholder="e.g., 15">
-                            </div>
-                            <div>
-                                <label for="filteringTools" class="block text-sm font-medium text-gray-700">Filtering Tools</label>
-                                <select id="filteringTools" class="select-field block w-full rounded-md">
-                                    <option value="">Select Filtering Tool</option>
-                                    <option value="Paper">Paper</option>
-                                    <option value="Metal">Metal</option>
-                                    <option value="Cloth">Cloth</option>
-                                </select>
-                            </div>
-
-                            <!-- Turbulence Section -->
-                            <div class="col-span-1">
-                                <label class="block text-sm font-medium text-gray-700">Turbulence</label>
-                                <div id="turbulenceActionsContainer">
-                                    <!-- Turbulence action rows will be added here by JavaScript -->
+                            <div id="beanInfoContent" class="session-content">
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label for="origin" class="block text-sm font-medium text-gray-700">Origin <span class="text-red-500">*</span></label>
+                                        <select id="origin" class="select-field block w-full rounded-md">
+                                            <option value="">Select Origin</option>
+                                            <option value="Brazil">Brazil</option>
+                                            <option value="Colombia">Colombia</option>
+                                            <option value="Costa Rica">Costa Rica</option>
+                                            <option value="Ethiopia">Ethiopia</option>
+                                            <option value="Guatemala">Guatemala</option>
+                                            <option value="Honduras">Honduras</option>
+                                            <option value="India">India</option>
+                                            <option value="Indonesia">Indonesia</option>
+                                            <option value="Kenya">Kenya</option>
+                                            <option value="Mexico">Mexico</option>
+                                            <option value="Peru">Peru</option>
+                                            <option value="Vietnam">Vietnam</option>
+                                            <option value="Others">Others</option>
+                                        </select>
+                                    </div>
+                                    <div id="otherOriginContainer" class="hidden">
+                                        <label for="otherOrigin" class="block text-sm font-medium text-gray-700">Other Origin (Please Specify)</label>
+                                        <input type="text" id="otherOrigin" class="input-field block w-full rounded-md" placeholder="e.g., Rwanda">
+                                    </div>
+                                    <div>
+                                        <label for="processingMethod" class="block text-sm font-medium text-gray-700">Processing methods</label>
+                                        <select id="processingMethod" class="select-field block w-full rounded-md">
+                                            <option value="">Select Processing Method</option>
+                                            <option value="Washed (Wet) Process">Washed (Wet) Process</option>
+                                            <option value="Natural (Dry) Process">Natural (Dry) Process</option>
+                                            <option value="Pulped Natural (Semi-Dry) Process">Pulped Natural (Semi-Dry) Process</option>
+                                            <option value="Honey Process (Semi-Washed)">Honey Process (Semi-Washed)</option>
+                                            <option value="Wet-Hulled (Giling Basah)">Wet-Hulled (Giling Basah)</option>
+                                            <option value="Anaerobic Fermentation">Anaerobic Fermentation</option>
+                                            <option value="Carbonic Maceration">Carbonic Maceration</option>
+                                            <option value="Others">Others</option>
+                                        </select>
+                                    </div>
+                                    <div id="otherProcessingMethodContainer" class="hidden">
+                                        <label for="otherProcessingMethod" class="block text-sm font-medium text-gray-700">Other Processing Method (Please Specify)</label>
+                                        <input type="text" id="otherProcessingMethod" class="input-field block w-full rounded-md" placeholder="e.g., Experimental Fermentation">
+                                    </div>
+                                    <div>
+                                        <label for="altitude" class="block text-sm font-medium text-gray-700">Altitude (m)</label>
+                                        <input type="number" id="altitude" class="input-field block w-full rounded-md" placeholder="e.g., 1500">
+                                    </div>
+                                    <div>
+                                        <label for="roastingDate" class="block text-sm font-medium text-gray-700">Roasting Date</label>
+                                        <input type="date" id="roastingDate" class="input-field block w-full rounded-md">
+                                    </div>
+                                    <div>
+                                        <label for="roastingLevel" class="block text-sm font-medium text-gray-700">Level of Roasting</label>
+                                        <select id="roastingLevel" class="select-field block w-full rounded-md">
+                                            <option value="">Select Level</option>
+                                            <option value="Cinnamon Roast: Agtron: ~90–100">Cinnamon Roast: Agtron: ~90–100</option>
+                                            <option value="Light Roast: Agtron Score: ~70–90">Light Roast: Agtron Score: ~70–90</option>
+                                            <option value="Medium Roast: Agtron Score: ~50–70">Medium Roast: Agtron Score: ~50–70</option>
+                                            <option value="Medium-Dark Roast: Agtron Score ~45–55">Medium-Dark Roast: Agtron Score ~45–55</option>
+                                            <option value="Dark Roast: Agtron Score: ~30–50">Dark Roast: Agtron Score: ~30–50</option>
+                                            <option value="Vienna/French/Italian Roast: Agtron <30">Vienna/French/Italian Roast: Agtron <30</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <button type="button" id="addActionButton" class="btn-secondary text-sm px-4 py-1 mt-2 rounded-md">+ Add Action</button>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sensation Section -->
-                <div class="session-card">
-                    <div class="session-header rounded-b-lg" data-target="sensationContent">
-                        <span>Sensation</span>
-                        <span class="toggle-icon">+</span> <!-- Changed to plus sign -->
-                    </div>
-                    <div id="sensationContent" class="session-content">
-                        <div class="grid grid-cols-1 gap-4">
-                            <div>
-                                <label for="sensationAcidity" class="block text-sm font-medium text-gray-700">Acidity (1-10)</label>
-                                <input type="number" id="sensationAcidity" class="input-field block w-full rounded-md" min="1" max="10" value="">
-                            </div>
-                            <div>
-                                <label for="sensationBody" class="block text-sm font-medium text-gray-700">Body (1-10)</label>
-                                <input type="number" id="sensationBody" class="input-field block w-full rounded-md" min="1" max="10" value="">
-                            </div>
-                            <div>
-                                <label for="sensationSweetness" class="block text-sm font-medium text-gray-700">Sweetness (1-10)</label>
-                                <input type="number" id="sensationSweetness" class="input-field block w-full rounded-md" min="1" max="10" value="">
-                            </div>
-                            <div>
-                                <label for="sensationFlavor" class="block text-sm font-medium text-gray-700">Flavor (1-10)</label>
-                                <input type="number" id="sensationFlavor" class="input-field block w-full rounded-md" min="1" max="10" value="">
-                            </div>
-                            <div>
-                                <label for="sensationAftertaste" class="block text-sm font-medium text-gray-700">Aftertaste (1-10)</label>
-                                <input type="number" id="sensationAftertaste" class="input-field block w-full rounded-md" min="1" max="10" value="">
-                            </div>
-                            <div>
-                                <label for="sensationBalance" class="block text-sm font-medium text-gray-700">Balance (1-10)</label>
-                                <input type="number" id="sensationBalance" class="input-field block w-full rounded-md" min="1" max="10" value="">
-                            </div>
-                            <div>
-                                <label for="sensationOverall" class="block text-sm font-medium text-gray-700">Overall Impression (1-10) <span class="text-red-500">*</span></label>
-                                <input type="number" id="sensationOverall" class="input-field block w-full rounded-md" min="1" max="10" value="">
                             </div>
                         </div>
+
+                        <!-- Brewing Section -->
+                        <div class="session-card">
+                            <div class="session-header" data-target="brewingContent">
+                                <span>Brewing</span>
+                                <span class="toggle-icon">+</span> <!-- Initial state will be set by JS -->
+                            </div>
+                            <div id="brewingContent" class="session-content">
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label for="brewingMethod" class="block text-sm font-medium text-gray-700">Brewing Method</label>
+                                        <select id="brewingMethod" class="select-field block w-full rounded-md">
+                                            <option value="">Select Brewing Method</option>
+                                            <option value="Pour-Over">Pour-Over</option>
+                                            <option value="French Press">French Press</option>
+                                            <option value="AeroPress">AeroPress</option>
+                                            <option value="Espresso">Espresso</option>
+                                            <option value="Espresso Ristretto">Espresso Ristretto</option>
+                                            <option value="Espresso Lungo">Espresso Lungo</option>
+                                            <option value="Cold Brew">Cold Brew</option>
+                                            <option value="Clever Dripper">Clever Dripper</option>
+                                            <option value="Moka Pot">Moka Pot</m>
+                                            <option value="Machine Drip">Machine Drip</option>
+                                            <option value="Others">Others</option>
+                                        </select>
+                                    </div>
+                                    <div id="otherBrewingMethodContainer" class="hidden">
+                                        <label for="otherBrewingMethod" class="block text-sm font-medium text-gray-700">Other Brewing Method (Please Specify)</label>
+                                        <input type="text" id="otherBrewingMethod" class="input-field block w-full rounded-md" placeholder="e.g., Siphon">
+                                    </div>
+                                    <div>
+                                        <label for="waterTemperature" class="block text-sm font-medium text-gray-700">Water Temperature (°C) <span class="text-red-500">*</span></label>
+                                        <input type="number" id="waterTemperature" class="input-field block w-full rounded-md" placeholder="e.g., 92">
+                                    </div>
+                                    <div>
+                                        <label for="grinderBrand" class="block text-sm font-medium text-gray-700">Your Grinder Brand</label>
+                                        <input type="text" id="grinderBrand" class="input-field block w-full rounded-md" placeholder="e.g., Baratza Encore">
+                                    </div>
+                                    <div>
+                                        <label for="grinderUnit" class="block text-sm font-medium text-gray-700">Your Grinder Unit</label>
+                                        <input type="text" id="grinderUnit" class="input-field block w-full rounded-md" placeholder="e.g., 15">
+                                    </div>
+                                    <div>
+                                        <label for="filteringTools" class="block text-sm font-medium text-gray-700">Filtering Tools</label>
+                                        <select id="filteringTools" class="select-field block w-full rounded-md">
+                                            <option value="">Select Filtering Tool</option>
+                                            <option value="Paper">Paper</option>
+                                            <option value="Metal">Metal</option>
+                                            <option value="Cloth">Cloth</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Turbulence Section -->
+                                    <div class="col-span-1">
+                                        <label class="block text-sm font-medium text-gray-700">Turbulence</label>
+                                        <div id="turbulenceActionsContainer">
+                                            <!-- Turbulence action rows will be added here by JavaScript -->
+                                        </div>
+                                        <button type="button" id="addActionButton" class="btn-secondary text-sm px-4 py-1 mt-2 rounded-md">+ Add Action</button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sensation Section -->
+                        <div class="session-card">
+                            <div class="session-header rounded-b-lg" data-target="sensationContent">
+                                <span>Sensation</span>
+                                <span class="toggle-icon">+</span> <!-- Initial state will be set by JS -->
+                            </div>
+                            <div id="sensationContent" class="session-content">
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label for="sensationAcidity" class="block text-sm font-medium text-gray-700">Acidity (1-10)</label>
+                                        <input type="number" id="sensationAcidity" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                                    </div>
+                                    <div>
+                                        <label for="sensationBody" class="block text-sm font-medium text-gray-700">Body (1-10)</label>
+                                        <input type="number" id="sensationBody" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                                    </div>
+                                    <div>
+                                        <label for="sensationSweetness" class="block text-sm font-medium text-gray-700">Sweetness (1-10)</label>
+                                        <input type="number" id="sensationSweetness" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                                    </div>
+                                    <div>
+                                        <label for="sensationFlavor" class="block text-sm font-medium text-gray-700">Flavor (1-10)</label>
+                                        <input type="number" id="sensationFlavor" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                                    </div>
+                                    <div>
+                                        <label for="sensationAftertaste" class="block text-sm font-medium text-gray-700">Aftertaste (1-10)</label>
+                                        <input type="number" id="sensationAftertaste" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                                    </div>
+                                    <div>
+                                        <label for="sensationBalance" class="block text-sm font-medium text-gray-700">Balance (1-10)</label>
+                                        <input type="number" id="sensationBalance" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                                    </div>
+                                    <div>
+                                        <label for="sensationOverall" class="block text-sm font-medium text-gray-700">Overall Impression (1-10) <span class="text-red-500">*</span></label>
+                                        <input type="number" id="sensationOverall" class="input-field block w-full rounded-md" min="1" max="10" value="">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Merged "Save and submit" Button -->
+                        <button id="saveSubmitBtn" class="btn-primary w-full mt-4">Save and submit</button>
+                    </div>
+
+                    <!-- Right Column: Chart Panel Only -->
+                    <div class="right-column-panels">
+                        <!-- Your Result Panel -->
+                        <div class="your-result-panel">
+                            <h2 class="text-2xl font-bold text-black text-center flex-shrink-0">Your Result</h2>
+                            <!-- Removed chartMessage as there's no table selection now -->
+                            <div class="chart-container">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                            <div id="mandatoryFieldsMessage" class="text-red-500 text-center mt-2 hidden"></div>
+                        </div>
+                        <!-- My Lab Record Panel removed -->
                     </div>
                 </div>
-
-                <!-- Merged "Save and submit" Button -->
-                <button id="saveSubmitBtn" class="btn-primary w-full mt-4">Save and submit</button>
             </div>
 
-            <!-- Right Column: Chart and Table Panels -->
-            <div class="right-column-panels">
-                <!-- Your Result Panel -->
-                <div class="your-result-panel">
-                    <h2 class="text-2xl font-bold text-black text-center flex-shrink-0">Your Result</h2>
-                    <div id="chartMessage" class="message-box text-center mb-2 flex-shrink-0">
-                        Please select exactly two entries from the table below to compare.
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="radarChart"></canvas>
-                    </div>
-                    <div id="mandatoryFieldsMessage" class="text-red-500 text-center mt-2 hidden"></div>
-                </div>
+            <!-- Tutorial Tab Content (empty for now) -->
+            <div id="tutorial" class="tab-pane">
+                <h2 class="text-2xl font-bold text-black text-center mb-4">Tutorials</h2>
+                <p class="text-gray-700 text-center">Content for brewing tutorials will go here.</p>
+            </div>
 
-                <!-- My Lab Record Panel -->
-                <div class="my-lab-record-panel">
-                    <h2 class="text-2xl font-bold text-black text-center flex-shrink-0">My Lab Record</h2>
-                    <div class="table-container">
-                        <table id="dataTable" class="min-w-full bg-white">
-                            <thead>
-                                <tr>
-                                    <th>Select</th>
-                                    <th>Colour</th>
-                                    <th>Coffee Beans (g)</th>
-                                    <th>Water (g)</th>
-                                    <th>Ratio</th>
-                                    <th>TDS (%)</th>
-                                    <th>Extraction Yield (%)</th>
-                                    <th>Origin</th>
-                                    <th>Processing Method</th>
-                                    <th>Altitude (m)</th>
-                                    <th>Roasting Date</th>
-                                    <th>Roasting Level</th>
-                                    <th>Brewing Method</th>
-                                    <th>Water Temperature (°C)</th>
-                                    <th>Your Grinder Brand</th>
-                                    <th>Your Grinder Unit</th>
-                                    <th>Filtering Tools</th>
-                                    <th>Turbulence Actions</th> <!-- New column for turbulence -->
-                                    <th>Acidity</th>
-                                    <th>Body</th>
-                                    <th>Sweetness</th>
-                                    <th>Flavor</th>
-                                    <th>Aftertaste</th>
-                                    <th>Balance</th>
-                                    <th>Overall Imp.</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Data rows will be inserted here by JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <button id="exportCsvBtn" class="btn-secondary w-full md:w-auto">Export to CSV</button>
-                </div>
+            <!-- Analytics Tab Content (empty for now) -->
+            <div id="analytics" class="tab-pane">
+                <h2 class="text-2xl font-bold text-black text-center mb-4">Analytics</h2>
+                <p class="text-700 text-center">Advanced analytics and visualizations will be displayed here.</p>
+            </div>
+
+            <!-- Q&A Tab Content (empty for now) -->
+            <div id="qna" class="tab-pane">
+                <h2 class="text-2xl font-bold text-black text-center mb-4">Q&A</h2>
+                <p class="text-gray-700 text-center">Frequently asked questions and answers about coffee brewing.</p>
             </div>
         </div>
     </div>
 
     <script>
-        // Global array to store all brewing data
+        // Global array to store all brewing data (kept for potential future use, e.g., analytics tab)
         let brewData = [];
-        // Set to store indices of selected rows for comparison
-        let selectedRows = new Set();
         // Chart.js instance
         let radarChart;
-        // Keep track of the current color index for new entries
+        // Keep track of the current color index for new entries (still useful for live chart color)
         let currentColorIndex = 0;
 
         // State for manual edit of Extraction Yield
@@ -635,10 +689,9 @@
 
         // DOM Elements
         const saveSubmitBtn = document.getElementById('saveSubmitBtn');
-        const dataTableBody = document.querySelector('#dataTable tbody');
+        // dataTableBody and exportCsvBtn removed as table is gone
         const radarChartCanvas = document.getElementById('radarChart');
-        const chartMessage = document.getElementById('chartMessage');
-        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        // chartMessage removed
         const mandatoryFieldsMessage = document.getElementById('mandatoryFieldsMessage');
 
         // New Ratio Calculation specific elements
@@ -664,7 +717,7 @@
         const otherBrewingMethodInput = document.getElementById('otherBrewingMethod');
         const waterTemperatureInput = document.getElementById('waterTemperature');
         const grinderBrandInput = document.getElementById('grinderBrand');
-        const grinderUnitInput = document.getElementById('grinderUnit');
+        const grinderUnitInput = document = document.getElementById('grinderUnit');
         const filteringToolsSelect = document.getElementById('filteringTools');
 
         // Turbulence specific elements
@@ -758,9 +811,7 @@
         // Add event listeners to sensation input fields for live chart update
         sensationInputs.forEach(input => {
             input.addEventListener('input', () => {
-                if (selectedRows.size === 0) {
-                    updateRadarChart();
-                }
+                updateRadarChart(); // Always update live chart
                 mandatoryFieldsMessage.classList.add('hidden');
             });
         });
@@ -856,8 +907,54 @@
             }
         });
 
+        /**
+         * Formats the time input value to MM:SS or HH:MM:SS and validates ranges.
+         * @param {HTMLInputElement} inputElement The time input field.
+         */
+        function formatTimeInput(inputElement) {
+            let value = inputElement.value.replace(/\D/g, ''); // Remove all non-digit characters
+
+            let formatted = '';
+            let h = '00', m = '00', s = '00';
+
+            if (value.length === 0) {
+                inputElement.value = '00:00'; // Default to 00:00 if empty
+                return;
+            }
+
+            if (value.length <= 2) { // Assume seconds (e.g., "5" -> 00:05)
+                s = value;
+            } else if (value.length <= 4) { // Assume minutes:seconds (e.g., "123" -> 01:23, "1234" -> 12:34)
+                m = value.substring(0, value.length - 2);
+                s = value.substring(value.length - 2);
+            } else { // Assume hours:minutes:seconds (e.g., "12345" -> 01:23:45, "123456" -> 12:34:56)
+                h = value.substring(0, value.length - 4);
+                m = value.substring(value.length - 4, value.length - 2);
+                s = value.substring(value.length - 2);
+            }
+
+            // Pad with leading zeros and validate ranges
+            s = s.padStart(2, '0');
+            if (parseInt(s) > 59) s = '59';
+
+            m = m.padStart(2, '0');
+            if (parseInt(m) > 59) m = '59';
+
+            h = h.padStart(2, '0');
+            if (parseInt(h) > 23) h = '23';
+
+            // Determine final format based on original input length or presence of hours
+            if (value.length > 4 || (value.length === 4 && h !== '00')) { // If hours were explicitly entered or implied by length
+                formatted = `${h}:${m}:${s}`;
+            } else { // Default to MM:SS
+                formatted = `${m}:${s}`;
+            }
+
+            inputElement.value = formatted;
+        }
+
         // Function to add a new turbulence action row
-        function addTurbulenceActionRow(action = '', actionTime = '', volume = '') {
+        function addTurbulenceActionRow(action = '', actionTime = '00:00', volume = '') {
             const rowDiv = document.createElement('div');
             rowDiv.className = 'turbulence-action-row';
 
@@ -880,8 +977,11 @@
             const actionTimeDiv = document.createElement('div');
             actionTimeDiv.innerHTML = `
                 <label class="block text-sm font-medium text-gray-700 action-time-label">Action Time</label>
-                <input type="text" class="input-field block w-full rounded-md turbulence-action-time" placeholder="e.g., hh:mm:ss" value="${actionTime}">
+                <input type="text" class="input-field block w-full rounded-md turbulence-action-time" placeholder="e.g., 00:00" value="${actionTime}">
             `;
+            const timeInput = actionTimeDiv.querySelector('.turbulence-action-time');
+            // Add event listener for blur to format/validate
+            timeInput.addEventListener('blur', () => formatTimeInput(timeInput));
             rowDiv.appendChild(actionTimeDiv);
 
             // Volume input
@@ -989,203 +1089,34 @@
             });
         }
 
-        // Function to update the data table
-        function updateDataTable() {
-            dataTableBody.innerHTML = '';
-            brewData.forEach((entry, index) => {
-                const row = dataTableBody.insertRow();
-                row.dataset.index = index;
-
-                if (selectedRows.has(index)) {
-                    row.classList.add('selected-row');
-                }
-
-                const checkboxCell = row.insertCell();
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'form-checkbox h-5 w-5 text-black rounded-md border-gray-300 focus:ring-black';
-                checkbox.checked = selectedRows.has(index);
-                checkbox.dataset.index = index;
-                checkbox.addEventListener('change', handleCheckboxChange);
-                checkboxCell.appendChild(checkbox);
-
-                // Create color swatch element
-                const colorCell = row.insertCell();
-                const colorSwatch = document.createElement('div');
-                colorSwatch.className = 'color-swatch';
-                colorSwatch.style.backgroundColor = entry.color.borderColor; // Use borderColor for solid swatch color
-                colorCell.appendChild(colorSwatch);
-
-                row.insertCell().textContent = entry.coffeeBeans;
-                row.insertCell().textContent = entry.water;
-                row.insertCell().textContent = entry.coffeeWaterRatio;
-                row.insertCell().textContent = entry.tds;
-                row.insertCell().textContent = entry.extractionYield;
-                row.insertCell().textContent = entry.origin;
-                row.insertCell().textContent = entry.processingMethod;
-                row.insertCell().textContent = entry.altitude;
-                row.insertCell().textContent = entry.roastingDate;
-                row.insertCell().textContent = entry.roastingLevel;
-                row.insertCell().textContent = entry.brewingMethod;
-                row.insertCell().textContent = entry.waterTemperature;
-                row.insertCell().textContent = entry.grinderBrand;
-                row.insertCell().textContent = entry.grinderUnit;
-                row.insertCell().textContent = entry.filteringTools;
-
-                // Display Turbulence Actions
-                const turbulenceActionsCell = row.insertCell();
-                if (entry.turbulenceActions && entry.turbulenceActions.length > 0) {
-                    turbulenceActionsCell.textContent = entry.turbulenceActions.map(action =>
-                        `${action.action || 'N/A'} @ ${action.actionTime || 'N/A'} for ${action.volume || 'N/A'}`
-                    ).join('; ');
-                } else {
-                    turbulenceActionsCell.textContent = 'N/A';
-                }
-
-                row.insertCell().textContent = entry.sensation.acidity;
-                row.insertCell().textContent = entry.sensation.body;
-                row.insertCell().textContent = entry.sensation.sweetness;
-                row.insertCell().textContent = entry.sensation.flavor;
-                row.insertCell().textContent = entry.sensation.aftertaste;
-                row.insertCell().textContent = entry.sensation.balance;
-                row.insertCell().textContent = entry.sensation.overall;
-            });
-        }
-
-        // Handle checkbox change for pair comparison
-        function handleCheckboxChange(event) {
-            const index = parseInt(event.target.dataset.index);
-            const rowElement = event.target.closest('tr');
-
-            if (event.target.checked) {
-                if (selectedRows.size < 2) {
-                    selectedRows.add(index);
-                    rowElement.classList.add('selected-row');
-                } else {
-                    const oldestIndex = selectedRows.values().next().value;
-                    selectedRows.delete(oldestIndex);
-                    selectedRows.add(index);
-
-                    const oldestCheckbox = dataTableBody.querySelector(`input[type="checkbox"][data-index="${oldestIndex}"]`);
-                    if (oldestCheckbox) {
-                        oldestCheckbox.checked = false;
-                        oldestCheckbox.closest('tr').classList.remove('selected-row');
-                    }
-                    rowElement.classList.add('selected-row');
-                }
-            } else {
-                selectedRows.delete(index);
-                rowElement.classList.remove('selected-row');
-            }
-            updateRadarChart();
-        }
-
-        // Function to update the radar chart based on selected rows or live input
+        // Function to update the radar chart (now only shows live input)
         function updateRadarChart() {
             radarChart.data.datasets = [];
-            chartMessage.classList.add('hidden');
 
-            if (selectedRows.size === 0) {
-                // Live preview from Sensation inputs
-                // Use || 5 to default to 5 if input is blank or invalid
-                const currentSensationData = [
-                    parseInt(document.getElementById('sensationAcidity').value) || 5,
-                    parseInt(document.getElementById('sensationBody').value) || 5,
-                    parseInt(document.getElementById('sensationSweetness').value) || 5,
-                    parseInt(document.getElementById('sensationFlavor').value) || 5,
-                    parseInt(document.getElementById('sensationAftertaste').value) || 5,
-                    parseInt(document.getElementById('sensationBalance').value) || 5,
-                    parseInt(document.getElementById('sensationOverall').value) || 5
-                ];
+            // Live preview from Sensation inputs
+            // Use || 5 to default to 5 if input is blank or invalid
+            const currentSensationData = [
+                parseInt(document.getElementById('sensationAcidity').value) || 5,
+                parseInt(document.getElementById('sensationBody').value) || 5,
+                parseInt(document.getElementById('sensationSweetness').value) || 5,
+                parseInt(document.getElementById('sensationFlavor').value) || 5,
+                parseInt(document.getElementById('sensationAftertaste').value) || 5,
+                parseInt(document.getElementById('sensationBalance').value) || 5,
+                parseInt(document.getElementById('sensationOverall').value) || 5
+            ];
 
-                const colorSet = chartColors[currentColorIndex % chartColors.length]; // Use next available color for live preview
-                radarChart.data.datasets.push({
-                    label: 'Your Scores',
-                    data: currentSensationData,
-                    backgroundColor: colorSet.backgroundColor,
-                    borderColor: colorSet.borderColor,
-                    pointBackgroundColor: colorSet.pointBackgroundColor,
-                    pointBorderColor: colorSet.pointBorderColor,
-                    pointHoverBackgroundColor: colorSet.pointHoverBackgroundColor,
-                    pointHoverBorderColor: colorSet.pointHoverBorderColor
-                });
-                radarChart.update();
-
-            } else if (selectedRows.size === 1) {
-                const index = Array.from(selectedRows)[0];
-                const entry = brewData[index];
-
-                const colorSet = entry.color; // Use stored color for selected entry
-                radarChart.data.datasets.push({
-                    label: `Entry ${index + 1}`, // Use generic label for selected entries
-                    data: [
-                        entry.sensation.acidity,
-                        entry.sensation.body,
-                        entry.sensation.sweetness,
-                        entry.sensation.flavor,
-                        entry.sensation.aftertaste,
-                        entry.sensation.balance,
-                        entry.sensation.overall
-                    ],
-                    backgroundColor: colorSet.backgroundColor,
-                    borderColor: colorSet.borderColor,
-                    pointBackgroundColor: colorSet.pointBackgroundColor,
-                    pointBorderColor: colorSet.pointBorderColor,
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: colorSet.pointHoverBorderColor
-                });
-                radarChart.update();
-
-            } else if (selectedRows.size === 2) {
-                const indices = Array.from(selectedRows);
-                const entry1 = brewData[indices[0]];
-                const entry2 = brewData[indices[1]];
-
-                const colorSet1 = entry1.color; // Use stored color for first selected entry
-                const colorSet2 = entry2.color; // Use stored color for second selected entry
-
-                radarChart.data.datasets.push({
-                    label: `Entry ${indices[0] + 1}`, // Use generic label for selected entries
-                    data: [
-                        entry1.sensation.acidity,
-                        entry1.sensation.body,
-                        entry1.sensation.sweetness,
-                        entry1.sensation.flavor,
-                        entry1.sensation.aftertaste,
-                        entry1.sensation.balance,
-                        entry1.sensation.overall
-                    ],
-                    backgroundColor: colorSet1.backgroundColor,
-                    borderColor: colorSet1.borderColor,
-                    pointBackgroundColor: colorSet1.pointBackgroundColor,
-                    pointBorderColor: colorSet1.pointBorderColor,
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: colorSet1.pointHoverBorderColor
-                });
-
-                radarChart.data.datasets.push({
-                    label: `Entry ${indices[1] + 1}`, // Use generic label for selected entries
-                    data: [
-                        entry2.sensation.acidity,
-                        entry2.sensation.body,
-                        entry2.sensation.sweetness,
-                        entry2.sensation.flavor,
-                        entry2.sensation.aftertaste,
-                        entry2.sensation.balance,
-                        entry2.sensation.overall
-                    ],
-                    backgroundColor: colorSet2.backgroundColor,
-                    borderColor: colorSet2.borderColor,
-                    pointBackgroundColor: colorSet2.pointBackgroundColor,
-                    pointBorderColor: colorSet2.pointBorderColor,
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: colorSet2.pointHoverBorderColor
-                });
-
-                radarChart.update();
-            } else {
-                chartMessage.classList.add('hidden');
-            }
+            const colorSet = chartColors[currentColorIndex % chartColors.length]; // Use next available color for live preview
+            radarChart.data.datasets.push({
+                label: 'Your Scores',
+                data: currentSensationData,
+                backgroundColor: colorSet.backgroundColor,
+                borderColor: colorSet.borderColor,
+                pointBackgroundColor: colorSet.pointBackgroundColor,
+                pointBorderColor: colorSet.pointBorderColor,
+                pointHoverBackgroundColor: colorSet.pointHoverBackgroundColor,
+                pointHoverBorderColor: colorSet.pointHoverBorderColor
+            });
+            radarChart.update();
         }
 
         // Function to handle saving data
@@ -1373,122 +1304,17 @@
             otherBrewingMethodContainer.classList.add('hidden');
             otherBrewingMethodInput.value = '';
 
-            selectedRows.clear();
-            updateRadarChart();
+            updateRadarChart(); // Update chart to reflect cleared sensation inputs
             mandatoryFieldsMessage.classList.add('hidden');
         }
 
         // Merged "Save and submit" button event listener
         saveSubmitBtn.addEventListener('click', () => {
             if (saveData()) {
-                selectedRows.clear();
-                selectedRows.add(brewData.length - 1); // Select the newly added entry
-
-                updateDataTable();
-                updateRadarChart();
+                updateRadarChart(); // Update chart to reflect new entry (if it were shown, currently shows live input)
                 clearFormFields(); // Clear fields after save and submit
 
                 showMessageBox('Record saved and ready for new entry!', 'success');
-            }
-        });
-
-        // Export to CSV functionality
-        exportCsvBtn.addEventListener('click', () => {
-            console.log('Export to CSV button clicked.');
-            if (brewData.length === 0) {
-                showMessageBox('No data to export.', 'info');
-                console.log('No data to export.');
-                return;
-            }
-
-            try {
-                // Prepare data for CSV, using the color's border color as its identifier
-                const dataToExport = brewData.map(entry => ({
-                    color: entry.color.borderColor, // Export the color string
-                    coffeeBeans: entry.coffeeBeans,
-                    water: entry.water,
-                    coffeeWaterRatio: entry.coffeeWaterRatio,
-                    tds: entry.tds,
-                    extractionYield: entry.extractionYield,
-                    origin: entry.origin,
-                    processingMethod: entry.processingMethod,
-                    altitude: entry.altitude,
-                    roastingDate: entry.roastingDate,
-                    roastingLevel: entry.roastingLevel,
-                    brewingMethod: entry.brewingMethod,
-                    waterTemperature: entry.waterTemperature,
-                    grinderBrand: entry.grinderBrand,
-                    grinderUnit: entry.grinderUnit,
-                    filteringTools: entry.filteringTools,
-                    // Stringify turbulenceActions array for CSV export
-                    turbulenceActions: JSON.stringify(entry.turbulenceActions || []),
-                    acidity: entry.sensation.acidity,
-                    body: entry.sensation.body,
-                    sweetness: entry.sensation.sweetness,
-                    flavor: entry.sensation.flavor,
-                    aftertaste: entry.sensation.aftertaste,
-                    balance: entry.sensation.balance,
-                    overallImpression: entry.sensation.overall
-                }));
-
-                console.log('Data to export:', dataToExport);
-
-                const fields = [
-                    'color',
-                    'coffeeBeans',
-                    'water',
-                    'coffeeWaterRatio',
-                    'tds',
-                    'extractionYield',
-                    'origin',
-                    'processingMethod',
-                    'altitude',
-                    'roastingDate',
-                    'roastingLevel',
-                    'brewingMethod',
-                    'waterTemperature',
-                    'grinderBrand',
-                    'grinderUnit',
-                    'filteringTools',
-                    'turbulenceActions', // New field for CSV
-                    'acidity',
-                    'body',
-                    'sweetness',
-                    'flavor',
-                    'aftertaste',
-                    'balance',
-                    'overallImpression'
-                ];
-
-                const csv = PapaParse.unparse(dataToExport, {
-                    header: true,
-                    columns: fields
-                });
-                console.log('Generated CSV content:', csv);
-
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                console.log('Created object URL:', url);
-
-                const link = document.createElement('a');
-                link.setAttribute('href', url);
-                link.setAttribute('download', 'coffee_brewing_data.csv');
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                console.log('Link appended to body, attempting click...');
-                link.click();
-
-                setTimeout(() => {
-                    URL.revokeObjectURL(url);
-                    document.body.removeChild(link);
-                    console.log('Object URL revoked and link removed.');
-                }, 100);
-
-                showMessageBox('Data exported to CSV successfully!', 'success');
-
-            } catch (error) {
-                console.error('Error during CSV export:', error);
-                showMessageBox('Error exporting data. Check console for details.', 'error');
             }
         });
 
@@ -1518,35 +1344,80 @@
                 const content = document.getElementById(contentId);
                 const icon = header.querySelector('.toggle-icon');
 
-                if (content.classList.contains('expanded')) {
-                    content.classList.remove('expanded');
-                    header.classList.remove('expanded');
-                } else {
+                // Check if the clicked session is already expanded
+                const isCurrentlyExpanded = content.classList.contains('expanded');
+
+                // Collapse all other sessions
+                document.querySelectorAll('.session-content.expanded').forEach(expandedContent => {
+                    expandedContent.classList.remove('expanded');
+                    const associatedHeader = expandedContent.previousElementSibling;
+                    if (associatedHeader) {
+                        associatedHeader.classList.remove('expanded');
+                        associatedHeader.querySelector('.toggle-icon').textContent = '+'; // Set to plus
+                    }
+                });
+
+                // If the clicked session was not expanded, expand it
+                if (!isCurrentlyExpanded) {
                     content.classList.add('expanded');
                     header.classList.add('expanded');
+                    icon.textContent = '-'; // Set to minus
+                } else {
+                    // If it was already expanded and clicked again, it's now collapsed
+                    icon.textContent = '+'; // Set to plus
                 }
             });
         });
 
+        // Tab switching logic
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.dataset.tab;
+
+                // Remove active class from all buttons and panes
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+                // Add active class to the clicked button and corresponding pane
+                button.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+
+                // Re-initialize chart when Lab tab is selected to ensure it renders correctly
+                if (tabId === 'lab') {
+                    if (radarChart) {
+                        radarChart.destroy(); // Destroy existing chart to prevent issues
+                    }
+                    initializeRadarChart();
+                    updateRadarChart(); // Update chart with current selections/inputs
+                }
+            });
+        });
+
+
         // Initial setup
         document.addEventListener('DOMContentLoaded', () => {
             initializeRadarChart();
-            updateDataTable();
             updateRadarChart(); // Show initial live preview of sensation inputs
             calculateBrewingMetrics(); // Calculate initial metrics on load
             addTurbulenceActionRow(); // Add the initial turbulence action row
 
-            // Ensure all sections are collapsed by default on load except the new ratio section
+            // Ensure only the "Brewing Ratio" session is expanded on load, others are collapsed
             document.querySelectorAll('.session-content').forEach(content => {
-                if (content.id !== 'ratioContent') { // Keep ratioContent expanded
+                const header = content.previousElementSibling;
+                const icon = header ? header.querySelector('.toggle-icon') : null;
+
+                if (content.id === 'ratioContent') {
+                    content.classList.add('expanded');
+                    if (header) header.classList.add('expanded');
+                    if (icon) icon.textContent = '-'; // Set to minus for initially expanded
+                } else {
                     content.classList.remove('expanded');
+                    if (header) header.classList.remove('expanded');
+                    if (icon) icon.textContent = '+'; // Set to plus for initially collapsed
                 }
             });
-            document.querySelectorAll('.session-header').forEach(header => {
-                if (header.dataset.target !== 'ratioContent') { // Keep ratioContent header expanded
-                    header.classList.remove('expanded');
-                }
-            });
+            // Ensure the 'Lab' tab is active on initial load
+            document.querySelector('.tab-button[data-tab="lab"]').click();
         });
     </script>
 </body>
